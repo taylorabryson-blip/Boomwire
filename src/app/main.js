@@ -28,6 +28,9 @@ async function boot() {
   const topbar = createTopbar();
   app.replaceChildren(topbar.el, view, tabbar.el);
   try { const [{ getProfile }, { registerCustomGear }] = await Promise.all([import('../services/storage/repository.js'), import('../data/exercises/gear.js')]); registerCustomGear((await getProfile()).customGear?.items ?? []); } catch { /* first run */ }
+  const applyMode = async () => { try { const { getProfile } = await import('../services/storage/repository.js'); tabbar.setHidden((await getProfile()).mode === 'nutrition' ? ['train'] : []); } catch { /* first run */ } };
+  await applyMode();
+  import('../services/storage/repository.js').then((repo) => repo.onChange(({ store }) => { if (store === 'profile') applyMode(); }));
   await startRouter(view, tabbar, topbar);
   registerServiceWorker();
   startWorkoutActivity();

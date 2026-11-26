@@ -38,7 +38,7 @@ export function mount(root) {
 
     return [
       NavHeader({ eyebrow: formatLongDate(today), title: profile.displayName ? `Hey, ${profile.displayName}` : 'Today', trailing: IconButton({ iconName: 'user', label: 'Profile', href: '#/profile' }) }),
-      kratosCard({ plan, active }),
+      kratosCard({ plan, active, diet: profile.mode === 'nutrition', targets: hasT ? targets : null, protein, today }),
       Card({},
         h('div', { class: 'row', style: { justifyContent: 'space-between' } },
           ring({ progress: hasT ? kcal / targets.kcal : null, color: '#fff', value: `${Math.round(kcal)}`, label: hasT ? `of ${targets.kcal} kcal` : 'kcal', href: '#/nutrition' }),
@@ -50,7 +50,9 @@ export function mount(root) {
       h('div', { class: 'grid-2' },
         Button({ label: 'Log Food', iconName: 'mic', onClick: () => import('../nutrition/quick-log-sheet.js').then((m) => m.openQuickLog({ date: today })) }),
         Button({ label: settings.units === 'metric' ? '+250 ml' : '+1 Cup', iconName: 'drop', onClick: () => addWater(settings.units === 'metric' ? 250 : Math.round(flOzToMl(8)), settings) }),
-        Button({ label: active ? 'Resume' : 'Workout', iconName: active ? 'play' : 'training', onClick: async () => { const w = active ?? await startWorkout({ name: 'Workout' }); navigate(`#/workout?id=${w.id}`); } }),
+        profile.mode === 'nutrition'
+          ? Button({ label: 'Weigh In', iconName: 'ruler', onClick: async () => { const [m, metrics] = await Promise.all([import('../profile/pages.js'), repo.list('bodyMetrics')]); m.weightSheet(metrics.filter((x) => x.weightKg != null).sort((a, b) => b.date.localeCompare(a.date))[0], settings.units); } })
+          : Button({ label: active ? 'Resume' : 'Workout', iconName: active ? 'play' : 'training', onClick: async () => { const w = active ?? await startWorkout({ name: 'Workout' }); navigate(`#/workout?id=${w.id}`); } }),
         Button({ label: 'Check-in', iconName: 'heart', onClick: openCheckin })),
     ];
   });
@@ -67,9 +69,19 @@ function ring({ progress, color, value, label, href }) {
     h('div', { style: { textAlign: 'center', minWidth: 0 } }, h('div', { class: 't-subhead num', style: { fontWeight: 600, whiteSpace: 'nowrap' } }, value), h('div', { class: 't-caption c-2', style: { whiteSpace: 'nowrap' } }, label)));
 }
 
-function kratosCard({ plan, active }) {
+function kratosCard({ plan, active, diet, targets, protein, today }) {
   const head = (line) => h('div', { class: 'row', style: { marginBottom: '12px' } }, kratosAvatar(38),
     h('div', { class: 'grow' }, h('div', { class: 't-headline' }, 'Cratos'), h('div', { class: 't-footnote c-2' }, line)));
+  if (diet && plan?.nutrition?.dailyMeals?.length) {
+    const now = new Date(); const nowMin = now.getHours() * 60 + now.getMinutes();
+    const toM = (t) => { const [a, b] = t.split(':').map(Number); return a * 60 + b; };
+    const next = plan.nutrition.dailyMeals.find((m) => toM(m.time) + 60 > nowMin);
+    const left = targets ? Math.max(0, Math.round(targets.protein - protein)) : null;
+    const fmt = (t) => { const m = toM(t); return `${m / 60 % 12 === 0 ? 12 : Math.floor(m / 60) % 12 || 12}:${String(m % 60).padStart(2, '0')} ${m < 720 ? 'AM' : 'PM'}`; };
+    return Card({ glass: true }, head(next ? `${next.label} around ${fmt(next.time)}${left ? ` · ${left} g protein to go` : ''}` : left ? `${left} g protein to go today.` : 'Done eating for today. Nice work.'),
+      Button({ label: next ? `Log ${next.label}` : 'Log a Snack', variant: 'primary', block: true, iconName: 'mic',
+        onClick: () => import('../nutrition/quick-log-sheet.js').then((m) => m.openQuickLog({ date: today, meal: next ? next.label.toLowerCase() : 'snacks' })) }));
+  }
   if (active) {
     return Card({ glass: true }, head('Finish what you started.'),
       Button({ label: `Resume ${active.name}`, variant: 'primary', block: true, iconName: 'play', onClick: () => navigate(`#/workout?id=${active.id}`) }));

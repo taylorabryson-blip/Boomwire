@@ -1,4 +1,5 @@
 /** Exercise detail: how-to, muscles, PRs, estimated 1RM trend, history. */
+import { equipmentNeeded } from '../../data/exercises/gear.js';
 import { h } from '../../components/dom.js';
 import { NavHeader, Card, List, ListRow, Provenance, EmptyState, Button } from '../../components/primitives.js';
 import { openSheet } from '../../components/overlays.js';
@@ -42,12 +43,13 @@ export function mount(root, { params }) {
 
     return [
       NavHeader({ title: def.name, back: { href: '#/train', label: 'Back' }, eyebrow: `${PATTERN_LABELS[def.pattern] ?? def.pattern} · ${EQUIPMENT_LABELS[def.equipment] ?? def.equipment} · ${def.difficulty}` }),
-      h('div', { class: 'chips' }, muscleChips(def.primary, true), muscleChips(def.secondary, false)),
+      h('div', { class: 'chips chips--scroll' }, muscleChips(def.primary, true), muscleChips(def.secondary, false)),
       h('div', { class: 'tiles' },
         tile(def.metric === 'time' ? 'longest hold' : `heaviest · ${wu}`, def.metric === 'time' ? (pr?.longestHold ? `${pr.longestHold.value}s` : '—') : (pr?.heaviest ? String(weightValue(pr.heaviest.value, u)) : '—')),
         tile(def.metric === 'time' ? 'sessions' : 'est. 1RM', def.metric === 'time' ? String(pr?.sessions ?? 0) : (pr?.bestE1rm ? String(weightValue(pr.bestE1rm.value, u, 0)) : '—')),
         tile('most reps', def.metric === 'time' ? '—' : String(pr?.mostReps?.value ?? '—'))),
       List(
+        ListRow({ iconName: 'training', title: 'Equipment', subtitle: equipmentNeeded(def.id, { short: true }), onClick: () => openSheet({ title: 'Equipment', content: h('p', { class: 't-subhead', style: { margin: 0, lineHeight: 1.45 } }, equipmentNeeded(def.id)) }) }),
         ListRow({ iconName: 'list', title: 'How to Perform', value: `${def.instructions.length} steps`, onClick: howTo }),
         ListRow({ iconName: 'clock', title: 'History', value: hist.length ? `${hist.length} sessions` : 'None yet', onClick: hist.length ? history : null }),
         variations.length > 0 && ListRow({ iconName: 'rotate', title: 'Variations', value: String(variations.length), onClick: variationSheet })),

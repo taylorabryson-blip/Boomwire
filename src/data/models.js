@@ -71,6 +71,7 @@ export const SCHEMAS = {
       environment: { type: 'enum', values: ENVIRONMENTS.map((e) => e.id), nullable: true },
       gear: { type: 'gearArray', values: GEAR.map((g) => g.id), nullable: true },
       customGear: { type: 'object', nullable: true },
+      mode: { type: 'enum', values: ['full', 'nutrition'], nullable: true },
       style: { type: 'enum', values: STYLES.map((x) => x.id), nullable: true },
       focusAreas: { type: 'enumArray', values: FOCUS_AREAS.map((x) => x.id), nullable: true },
     },
@@ -325,7 +326,7 @@ export class ValidationError extends Error {
 export const DEFAULT_SETTINGS = Object.freeze({ units: 'imperial', hydrationGoalMl: null, reminders: null, nutritionTargets: null, macroDisplay: 'grams', lastSeenVersion: null, voice: null, appearance: null, widgetKey: null });
 export const DEFAULT_PROFILE = Object.freeze({
   displayName: null, birthYear: null, sex: null, heightCm: null, experience: null, goal: null,
-  trainingDaysTarget: null, sessionMinutes: null, activityLevel: null, environment: null, gear: null, customGear: null, style: null, focusAreas: null,
+  trainingDaysTarget: null, sessionMinutes: null, activityLevel: null, environment: null, gear: null, customGear: null, mode: null, style: null, focusAreas: null,
 });
 
 /** Approximate age from birth year (±1 year). null when unknown. */

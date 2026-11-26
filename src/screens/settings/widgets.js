@@ -1,4 +1,4 @@
-/** Settings → Widgets & Alarms: Scriptable widgets (Home + Lock Screen) and real iPhone alarms via Shortcuts. */
+/** Settings → Widgets: Home Screen and Lock Screen widgets via Scriptable. */
 import { h, svg } from '../../components/dom.js';
 import { icon } from '../../components/icons.js';
 import { NavHeader, List, ListRow, FieldRow, Switch, Button } from '../../components/primitives.js';
@@ -6,8 +6,8 @@ import { openSheet, toast } from '../../components/overlays.js';
 import { haptic } from '../../components/haptics.js';
 import { liveScreen } from '../shared/live.js';
 import * as repo from '../../services/storage/repository.js';
-import { enableSync, disableSync, publish, snapshot, scriptableSource, alarmShortcutURL, alarmFeedURL, alarmsFor, lastSyncedAt, SHORTCUT_NAME, SCRIPTABLE_APP } from '../../services/widgets.js';
-import { fmt12, toMin } from '../../engines/coach/parser.js';
+import { enableSync, disableSync, publish, snapshot, scriptableSource, lastSyncedAt, SCRIPTABLE_APP } from '../../services/widgets.js';
+
 
 async function copy(text, what) {
   try { await navigator.clipboard.writeText(text); haptic('success'); toast(`${what} copied`, { iconName: 'copy' }); }
@@ -49,8 +49,6 @@ export function mount(root) {
     const s = await repo.getSettings();
     const on = !!s.widgetKey;
     const data = await snapshot();
-    const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
-    const tAlarms = await alarmsFor(tomorrow);
     const synced = lastSyncedAt();
 
     const widgetSetup = () => openSheet({ title: 'Add Hercules Widgets', content: h('div', { class: 'stack' },
@@ -65,37 +63,12 @@ export function mount(root) {
       Button({ label: 'Copy Widget Script', iconName: 'copy', variant: 'primary', block: true, onClick: () => copy(scriptableSource(s.widgetKey), 'Widget script') }),
       h('p', { class: 't-footnote c-2', style: { margin: 0 } }, 'Widgets refresh about every 15 minutes (iOS decides exactly when). Tapping one opens Hercules.')) });
 
-    const shortcutSetup = () => openSheet({ title: `Create “${SHORTCUT_NAME}”`, content: h('div', { class: 'stack' },
-      h('p', { class: 't-subhead c-2', style: { margin: 0 } }, 'One time, about a minute. After this, Hercules sets real Clock alarms for you.'),
-      steps([
-        `Open Shortcuts → + → name it exactly “${SHORTCUT_NAME}”.`,
-        'Add “Split Text” → Shortcut Input, separator: New Lines.',
-        'Add “Repeat with Each” → Split Text.',
-        'Inside the repeat: “Split Text” → Repeat Item, separator: Custom “|”.',
-        'Add “Get Item from List” → First Item. Then add “Get Dates from Input” → Item from List.',
-        'Add “Get Item from List” → Last Item, from the second Split Text.',
-        'Add “Create Alarm” → Time: Dates, Label: Item from List. Turn off “Show When Run”.',
-        'Done. Back in Hercules, tap “Set Tomorrow’s Alarms”.',
-      ]),
-      h('div', { class: 't-headline', style: { marginTop: '6px' } }, 'Make it automatic (optional)'),
-      steps([
-        'Shortcuts → Automation → + → Time of Day → 9:00 PM, Daily → Run Immediately.',
-        'Add “Get Contents of URL” → paste your alarm feed (button below).',
-        `Add “Run Shortcut” → ${SHORTCUT_NAME}, input: Contents of URL.`,
-      ]),
-      Button({ label: 'Copy My Alarm Feed URL', iconName: 'copy', block: true, onClick: () => (on ? copy(alarmFeedURL(s.widgetKey), 'Alarm feed URL') : toast('Turn on Sync first', { iconName: 'info' })) })) });
-
     const lockSheet = () => openSheet({ title: 'Lock Screen Widgets', content: h('div', { class: 'stack' }, LockPreview(data),
       steps(['Copy the widget script (Home Screen Widgets) if you haven’t.', 'Long-press the Lock Screen → Customize → Lock Screen.', 'Tap the widget area → Scriptable → circle or rectangle.', 'Tap it → Script: Hercules → Done.']),
       Button({ label: 'Sync Now', iconName: 'rotate', block: true, onClick: async () => { const ok = await publish(true); toast(ok ? 'Widgets updated' : 'Offline — will retry', { iconName: 'widget' }); } }),
       h('p', { class: 't-footnote c-2', style: { margin: 0 } }, 'Only today’s totals, targets, next session and alarm times sync, under a random key stored on this phone.')) });
-    const fire = (alarms, when) => {
-      if (!alarms.length) { toast(`No alarms ${when}`, { iconName: 'alarm', subtitle: 'Nothing left on the plan.' }); return; }
-      haptic(); location.href = alarmShortcutURL(alarms);
-    };
-
     return [
-      NavHeader({ title: 'Widgets & Alarms', back: { href: '#/settings', label: 'Settings' } }),
+      NavHeader({ title: 'Widgets', back: { href: '#/settings', label: 'Settings' } }),
       Preview(data),
       List(
         FieldRow({ title: 'Sync to widgets', iconName: 'widget', control: Switch({ checked: on, label: 'Sync to widgets', onChange: async (v) => {
@@ -105,10 +78,7 @@ export function mount(root) {
         } }) }),
         on && ListRow({ iconName: 'plus', title: 'Home Screen Widgets', subtitle: 'Small, medium and large', onClick: widgetSetup }),
         on && ListRow({ iconName: 'plus', title: 'Lock Screen Widgets', subtitle: synced ? `Synced ${new Date(synced).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : 'Circle, rectangle and inline', onClick: lockSheet })),
-      List(
-        data.alarmsToday.length > 0 && ListRow({ iconName: 'alarm', title: 'Set Today’s Remaining Alarms', value: String(data.alarmsToday.length), chevron: false, onClick: () => fire(data.alarmsToday, 'left today') }),
-        ListRow({ iconName: 'alarm', title: 'Set Tomorrow’s Alarms', subtitle: tAlarms.length ? tAlarms.map((a) => `${fmt12(toMin(a.time))} ${a.label}`).join(' · ') : 'No plan yet', chevron: false, onClick: () => fire(tAlarms, 'tomorrow') }),
-        ListRow({ iconName: 'info', title: `Set Up “${SHORTCUT_NAME}”`, subtitle: 'One-time, lets Hercules use Clock', onClick: shortcutSetup })),
+      h('p', { class: 'section__footer' }, 'Alarms and calendar live in Settings → Schedule & Alarms.'),
     ];
   });
 }

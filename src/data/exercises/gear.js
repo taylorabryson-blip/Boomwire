@@ -194,3 +194,15 @@ export const FOCUS_AREAS = [
   { id: 'chest', label: 'Chest' }, { id: 'back', label: 'Back' }, { id: 'shoulders', label: 'Shoulders' },
   { id: 'arms', label: 'Arms' }, { id: 'core', label: 'Core' }, { id: 'legs', label: 'Legs' },
 ];
+
+/** Equipment an exercise needs, as readable text: "Barbell + Power rack or Squat stands". */
+export function equipmentNeeded(exerciseId, { short = false } = {}) {
+  const req = REQUIREMENTS[exerciseId] ?? EXERCISES.find((e) => e.id === exerciseId)?.requires ?? [];
+  if (!req.length) return 'No equipment';
+  const tidy = (l) => { const t = l.replace(/\s*\(.*\)/, '').split(' / ')[0].replace(/^Olympic /, '').replace(/ machine$/, ''); return t[0].toUpperCase() + t.slice(1); };
+  if (short) return req.map((g) => tidy(GEAR_BY_ID[g[0]]?.label ?? g[0])).join(' + ');
+  return req.map((group) => {
+    const names = group.map((id) => GEAR_BY_ID[id]?.label ?? id);
+    return names.length > 2 ? `${names.slice(0, 2).join(' or ')} or similar` : names.join(' or ');
+  }).join(' + ');
+}

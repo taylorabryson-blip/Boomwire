@@ -19,7 +19,7 @@ let bannerEl = null, showing = false, hideTimer = null;
 const queue = [];
 
 function bannerNode(a) {
-  const node = h('div', { class: 'banner', role: 'status', 'aria-live': 'polite' },
+  const node = h('div', { class: 'banner lg', role: 'status', 'aria-live': 'polite' },
     h('div', { class: 'banner__app' }, a.icon ? icon(a.icon, 20) : herculesMark(22)),
     h('div', { class: 'banner__body' },
       h('div', { class: 'banner__top' }, h('span', { class: 'banner__title' }, a.title), h('span', { class: 'banner__time' }, 'now')),
@@ -70,7 +70,7 @@ let liveEl = null, liveActivity = null;
 
 function renderLive(a) {
   if (!liveEl) {
-    liveEl = h('button', { class: 'livebar', type: 'button', 'aria-label': 'Open activity', onClick: () => { haptic(); liveActivity?.onTap?.(); } });
+    liveEl = h('button', { class: 'livebar lg', type: 'button', 'aria-label': 'Open activity', onClick: () => { haptic(); liveActivity?.onTap?.(); } });
     document.body.append(liveEl);
     requestAnimationFrame(() => requestAnimationFrame(() => liveEl?.classList.add('is-in')));
   }

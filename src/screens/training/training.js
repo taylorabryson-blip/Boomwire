@@ -54,7 +54,7 @@ export function mount(root) {
       h('div', { class: 'tiles' }, tile('sessions · 7d', String(week.length)), tile('sets · 7d', String(week.reduce((s, w) => s + workoutSetCount(w), 0))), tile(`${weightUnit(u)} · 7d`, vol ? Math.round(weightValue(vol, u, 0)).toLocaleString() : '0')),
       h('div', { class: 'nav-tiles' },
         navTile('clock', 'History', `${done.length} workouts`, '#/history'),
-        navTile('search', 'Library', `${avail} for your gear`, '#/library'),
+        navTile('search', 'Library', `${EXERCISES.length} exercises`, '#/library'),
         navTile('list', 'Templates', `${templates.length} saved`, '#/templates')),
       plan && Button({ label: 'This Week’s Plan', iconName: 'calendar', block: true, onClick: () => navigate('#/kratos') }),
     ];

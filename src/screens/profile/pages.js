@@ -1,7 +1,7 @@
 /** Profile drill-downs: Personal Info, Goals & Style, Gear. Each saves as you go. */
 import { h } from '../../components/dom.js';
 import { icon } from '../../components/icons.js';
-import { NavHeader, List, ListRow, FieldRow, Select, Stepper, Button, Search, Card } from '../../components/primitives.js';
+import { NavHeader, List, ListRow, FieldRow, Select, Stepper, Button, Search, Card, SegmentedControl } from '../../components/primitives.js';
 import { openSheet, toast } from '../../components/overlays.js';
 import { haptic } from '../../components/haptics.js';
 import * as repo from '../../services/storage/repository.js';
@@ -42,7 +42,7 @@ export function personal(root) {
   });
 }
 
-function weightSheet(last, u) {
+export function weightSheet(last, u) {
   const metric = u === 'metric';
   const a = h('input', { type: 'number', inputmode: 'decimal', placeholder: metric ? '80' : '180', value: last ? Math.round((metric ? last.weightKg : kgToLb(last.weightKg)) * 10) / 10 : '' });
   const err = h('div', { class: 'field-error' });
@@ -77,8 +77,20 @@ export function style(root) {
   return liveScreen(root, async () => {
     const p = await repo.getProfile();
     const focus = new Set(p.focusAreas ?? []);
+    const modeSeg = SegmentedControl({ label: 'Use Hercules for', value: p.mode === 'nutrition' ? 'nutrition' : 'full',
+      options: [{ value: 'full', label: 'Training + Diet' }, { value: 'nutrition', label: 'Diet Only' }],
+      onChange: (v) => save({ mode: v, ...(v === 'nutrition' && !['muscle', 'fat_loss', 'maintain'].includes(p.goal) ? { goal: 'maintain' } : {}) }) });
+    if (p.mode === 'nutrition') {
+      return [
+        NavHeader({ title: 'Goals', back: { href: '#/profile', label: 'Profile' } }),
+        modeSeg,
+        List(FieldRow({ title: 'Goal', control: Select({ value: p.goal, onChange: (v) => save({ goal: v }), options: [{ value: 'muscle', label: 'Bulk' }, { value: 'fat_loss', label: 'Cut' }, { value: 'maintain', label: 'Maintain' }] }) })),
+        h('p', { class: 'section__footer' }, 'Bulk ≈ 10% over maintenance, cut ≈ 15% under. Your calories and protein update right away.'),
+      ];
+    }
     return [
       NavHeader({ title: 'Goals & Style', back: { href: '#/profile', label: 'Profile' } }),
+      modeSeg,
       List(
         FieldRow({ title: 'Experience', control: Select({ value: p.experience, onChange: (v) => save({ experience: v }), options: [{ value: 'beginner', label: 'Beginner (< 1 yr)' }, { value: 'intermediate', label: 'Intermediate (1–3 yrs)' }, { value: 'advanced', label: 'Advanced (3+ yrs)' }] }) }),
         FieldRow({ title: 'Main goal', control: Select({ value: p.goal, onChange: (v) => save({ goal: v }), options: [{ value: 'muscle', label: 'Build muscle' }, { value: 'fat_loss', label: 'Lose fat' }, { value: 'performance', label: 'Performance' }, { value: 'consistency', label: 'Consistency' }, { value: 'maintain', label: 'Maintain' }] }) }),
@@ -90,12 +102,9 @@ export function style(root) {
         } }, f.label)));
         paint();
         openSheet({ title: 'Focus Areas', content: h('div', { class: 'stack' }, h('p', { class: 't-footnote c-2', style: { margin: 0 } }, 'Pick up to three. Cratos adds extra volume here.'), chips), onClose: () => save({ focusAreas: [...focus] }) });
-      } })),
-      h('div', {},
-        h('div', { class: 'list' }, STYLES.map((s) => h('button', { class: 'list-row', type: 'button', 'aria-pressed': String(p.style === s.id), onClick: () => { haptic(); save({ style: s.id }); } },
-          h('div', { class: 'list-row__main' }, h('div', { class: 'list-row__title' }, s.label)),
-          p.style === s.id ? h('span', { style: { color: '#fff' } }, icon('check', 18)) : null))),
-        h('p', { class: 'section__footer' }, STYLES.find((s) => s.id === p.style)?.blurb ?? 'Pick a style — it sets reps, rest and exercise choice.')),
+      } }),
+        FieldRow({ title: 'Training style', control: Select({ value: p.style, onChange: (v) => save({ style: v }), options: STYLES.map((x) => ({ value: x.id, label: x.label })) }) })),
+      h('p', { class: 'section__footer' }, STYLES.find((x) => x.id === p.style)?.blurb ?? 'Your style sets reps, rest and exercise choice.'),
     ];
   });
 }
@@ -111,8 +120,8 @@ export async function gear(root) {
   const persist = async () => { await save({ gear: [...owned] }); p = await repo.getProfile(); updateSummary(); };
   const updateSummary = () => {
     summary.textContent = p.gear == null
-      ? `No gear set — all ${EXERCISES.length} exercises shown`
-      : `${owned.size} items · ${exercisesForGear([...owned]).length} of ${EXERCISES.length} exercises available`;
+      ? 'Pick a preset or a category.'
+      : `${owned.size} item${owned.size === 1 ? '' : 's'} selected`;
   };
   const check = (on) => h('span', { class: 'set-check', style: on ? { background: '#30d158', color: '#000' } : null }, icon('check', 16));
 
@@ -171,21 +180,21 @@ export async function gear(root) {
     const err = h('div', { class: 'field-error' });
     const { close } = openSheet({ title: 'Add Equipment', content: h('div', { class: 'stack' },
       h('label', { class: 'field' }, name),
-      h('div', { class: 't-footnote c-2' }, 'Works like… (pick any, so Cratos knows what exercises it unlocks)'), chips, err,
+      h('div', { class: 't-footnote c-2' }, 'Similar to… (optional, helps Cratos plan with it)'), chips, err,
       Button({ label: 'Add Equipment', variant: 'primary', block: true, onClick: async () => {
         const label = name.value.trim();
         if (!label) { err.textContent = 'Give it a name.'; return; }
         const slug = label.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 32) || 'item';
         const items = [...(p.customGear?.items ?? []).filter((x) => x.id !== `custom:${slug}`), { id: `custom:${slug}`, label, like: [...like] }];
         await saveCustom(items); close(); haptic('success');
-        toast(`Added ${label}`, { subtitle: like.size ? `Unlocks ${exercisesForGear([...owned]).length} exercises total` : 'Saved to My Equipment' });
+        toast(`Added ${label}`, { subtitle: 'Saved to My Equipment' });
       } })) });
     setTimeout(() => name.focus(), 350);
   }
   function openMine() {
     const items = p.customGear?.items ?? [];
     const { close } = openSheet({ title: 'My Equipment', content: List(...items.map((it) => ListRow({
-      title: it.label, subtitle: it.like?.length ? `Works like ${it.like.map((x) => GEAR_BY_ID[x]?.label ?? x).join(', ')}` : 'Tracked only',
+      title: it.label, subtitle: it.like?.length ? `Similar to ${it.like.map((x) => GEAR_BY_ID[x]?.label ?? x).join(', ')}` : 'Your equipment',
       trailing: h('span', { class: 't-footnote', style: { color: '#ff453a' } }, 'Remove'), chevron: false,
       onClick: async () => { await saveCustom(items.filter((x) => x.id !== it.id)); close(); toast(`Removed ${it.label}`, { iconName: 'trash' }); } }))) });
   }

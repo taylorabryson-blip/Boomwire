@@ -21,12 +21,12 @@ export function mount(root) {
           h('div', { class: 't-footnote c-2' }, [age != null && `~${age} yrs`, p.heightCm && heightString(p.heightCm, settings.units), p.experience].filter(Boolean).join(' · ') || 'Tap to add your details')))),
       List(
         ListRow({ iconName: 'user', title: 'Personal Info', href: '#/profile-personal' }),
-        ListRow({ iconName: 'target', title: 'Goals & Style', value: STYLES.find((s) => s.id === p.style)?.label ?? 'Not set', href: '#/profile-style' }),
-        ListRow({ iconName: 'gear', title: 'Gear', value: p.gear ? `${p.gear.length} items` : 'All', href: '#/gear' }),
+        p.mode === 'nutrition'
+          ? ListRow({ iconName: 'target', title: 'Goals', value: { muscle: 'Bulk', fat_loss: 'Cut', maintain: 'Maintain' }[p.goal] ?? 'Not set', href: '#/profile-style' })
+          : ListRow({ iconName: 'target', title: 'Goals & Style', value: STYLES.find((s) => s.id === p.style)?.label ?? 'Not set', href: '#/profile-style' }),
+        p.mode !== 'nutrition' && ListRow({ iconName: 'gear', title: 'Equipment', value: p.gear ? `${p.gear.length} items` : 'Not set', href: '#/gear' }),
         ListRow({ iconName: 'apple', title: 'Nutrition Targets', value: targets && !targets.missing ? `${targets.kcal} kcal` : 'Not set', href: '#/nutrition-targets' })),
-      List(
-        ListRow({ iconName: 'bell', title: 'Notifications', href: '#/notifications' }),
-        ListRow({ iconName: 'settings', title: 'Settings', href: '#/settings' })),
+      List(ListRow({ iconName: 'settings', title: 'Settings', href: '#/settings' })),
     ];
   });
 }

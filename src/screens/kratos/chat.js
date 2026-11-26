@@ -31,7 +31,7 @@ export async function mount(root) {
   const send = h('button', { class: 'composer__send', type: 'button', 'aria-label': 'Send', disabled: true }, icon('send', 18));
   const chips = h('div', { class: 'chips chips--scroll' }, SUGGESTIONS.map((t) => h('button', { class: 'chip', type: 'button', onClick: () => submit(t) }, t)));
   const mic = h('button', { class: 'composer__mic', type: 'button', 'aria-label': 'Talk to Cratos' }, icon('mic', 20));
-  const composer = h('div', { class: 'composer' }, h('div', { class: 'composer__inner' }, chips, h('div', { class: 'composer__bar' }, mic, input, send)));
+  const composer = h('div', { class: 'composer' }, h('div', { class: 'composer__inner' }, chips, h('div', { class: 'composer__bar lg' }, mic, input, send)));
   document.body.append(composer);
 
   const grow = () => { input.style.height = 'auto'; input.style.height = `${Math.min(120, input.scrollHeight)}px`; send.disabled = !input.value.trim(); };

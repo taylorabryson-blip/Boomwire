@@ -249,3 +249,18 @@ export function nutritionTiming(sessions, av, today) {
 }
 
 export const sessionLabel = (s) => `${DAY_NAMES[s.day]} · ${fmt12(toMin(s.start))}`;
+
+/**
+ * K7 — Diet-only plan: no training, three meals spaced across the waking day
+ * (breakfast ~30 min after waking, dinner ≥ 3 h before bed, lunch midway).
+ */
+export function dietPlan(av) {
+  const wake = toMin(av?.wakeTime ?? '07:00');
+  let sleep = toMin(av?.sleepTime ?? '23:00');
+  if (sleep <= wake) sleep += 24 * 60;
+  const breakfast = wake + 30;
+  const dinner = Math.max(breakfast + 6 * 60, Math.min(sleep - 180, breakfast + 11 * 60));
+  const lunch = Math.round((breakfast + dinner) / 2 / 15) * 15;
+  const meals = [['Breakfast', breakfast], ['Lunch', lunch], ['Dinner', dinner]].map(([label, m]) => ({ label, time: toHHMM(m % 1440) }));
+  return { kind: 'plan', mode: 'nutrition', sessions: [], restDays: [0, 1, 2, 3, 4, 5, 6], daysRequested: 0, notes: [], nutrition: { meals: [], dailyMeals: meals, startDate: null } };
+}

@@ -10,7 +10,8 @@ import { island } from '../../components/island.js';
 import { haptic } from '../../components/haptics.js';
 import * as repo from '../../services/storage/repository.js';
 import { getAvailability, saveAvailability, savePlan } from '../../services/coach.js';
-import { DEFAULT_AVAILABILITY, planWeek } from '../../engines/coach/planner.js';
+import { DEFAULT_AVAILABILITY, planWeek, dietPlan } from '../../engines/coach/planner.js';
+import { activeTargets } from '../../services/nutrition/log.js';
 import { DAY_SHORT } from '../../engines/coach/parser.js';
 import { ENVIRONMENTS, STYLES } from '../../data/exercises/gear.js';
 import { navigate } from '../../navigation/nav.js';
@@ -33,7 +34,7 @@ export async function mount(root) {
     school: blocks.find((b) => b.label === 'School') ?? { label: 'School', start: '08:00', end: '15:00', days: new Set([0, 1, 2, 3, 4]) },
     wake: av.wakeTime, sleep: av.sleepTime,
     days: av.daysPerWeek ?? p0.trainingDaysTarget ?? 3, minutes: av.sessionMinutes ?? p0.sessionMinutes ?? 60,
-    pref: av.preference ?? 'any', env: p0.environment ?? null, style: p0.style ?? null, experience: p0.experience ?? null,
+    pref: av.preference ?? 'any', env: p0.environment ?? null, style: p0.style ?? null, experience: p0.experience ?? null, mode: p0.mode ?? null,
     goal: p0.goal ?? null, birthYear: p0.birthYear ?? null, sex: p0.sex ?? null, activity: p0.activityLevel ?? null,
     heightA: p0.heightCm ? (metric ? Math.round(p0.heightCm) : Math.floor(Math.round(cmToIn(p0.heightCm)) / 12)) : '',
     heightB: p0.heightCm && !metric ? Math.round(cmToIn(p0.heightCm)) % 12 : '',
@@ -57,35 +58,42 @@ export async function mount(root) {
     dayChips(b.days),
     List(FieldRow({ title: 'Starts', control: time(b.start, (v) => { b.start = v; }) }), FieldRow({ title: 'Ends', control: time(b.end, (v) => { b.end = v; }) })));
 
+  const diet = () => st.mode === 'nutrition';
   const STEPS = [
-    { q: 'Do you work or go to school?', hint: 'Cratos plans around anything you can’t move.', ok: () => st.commit, view: () => h('div', { class: 'choice-grid' },
+    { q: 'What do you want from Hercules?', hint: 'You can change this anytime in Profile.', ok: () => st.mode, view: () => h('div', { class: 'choice-grid' },
+      choice('Train & eat right', 'Workouts, plan and nutrition', st.mode === 'full', () => { st.mode = 'full'; }),
+      choice('Just my diet', 'Bulk, cut or maintain — calories, protein, water', st.mode === 'nutrition', () => { st.mode = 'nutrition'; if (!['muscle', 'fat_loss', 'maintain'].includes(st.goal)) st.goal = null; })) },
+    { q: 'Do you work or go to school?', skip: diet, hint: 'Cratos plans around anything you can’t move.', ok: () => st.commit, view: () => h('div', { class: 'choice-grid' },
       choice('Work', 'Job or shifts', st.commit === 'work', () => { st.commit = 'work'; }), choice('School', 'Classes', st.commit === 'school', () => { st.commit = 'school'; }),
       choice('Both', 'Work and school', st.commit === 'both', () => { st.commit = 'both'; }), choice('Neither', 'My days are open', st.commit === 'none', () => { st.commit = 'none'; })) },
-    { q: 'When are you busy?', hint: 'Tap the days, then set the hours.', skip: () => st.commit === 'none', ok: () => true, view: () => h('div', { class: 'stack' },
+    { q: 'When are you busy?', hint: 'Tap the days, then set the hours.', skip: () => diet() || st.commit === 'none', ok: () => true, view: () => h('div', { class: 'stack' },
       (st.commit === 'work' || st.commit === 'both') && blockEditor(st.work, 'Work'),
       (st.commit === 'school' || st.commit === 'both') && blockEditor(st.school, 'School')) },
-    { q: 'When do you wake up and go to bed?', hint: 'Cratos keeps 30 minutes after waking and 90 before bed free.', ok: () => true, view: () => List(
+    { q: 'When do you wake up and go to bed?', hint: 'Cratos times your meals and workouts around your day.', ok: () => true, view: () => List(
       FieldRow({ title: 'Wake up', iconName: 'sunrise', control: time(st.wake, (v) => { st.wake = v; }) }),
       FieldRow({ title: 'Bedtime', iconName: 'moon', control: time(st.sleep, (v) => { st.sleep = v; }) })) },
-    { q: 'How often can you train?', hint: 'Be honest. Consistency beats ambition.', ok: () => true, view: () => h('div', { class: 'stack' },
+    { q: 'How often can you train?', skip: diet, hint: 'Be honest. Consistency beats ambition.', ok: () => true, view: () => h('div', { class: 'stack' },
       List(FieldRow({ title: 'Days per week', control: Stepper({ value: st.days, min: 1, max: 6, onChange: (v) => { st.days = v; } }) })),
       h('div', { class: 'chips', style: { justifyContent: 'space-between' } }, [30, 45, 60, 75, 90].map((m) => h('button', { class: 'chip', type: 'button', style: { flex: 1, padding: 0 }, 'aria-pressed': String(st.minutes === m), onClick: () => { st.minutes = m; haptic(); render(); } }, `${m} min`)))) },
-    { q: 'When do you like to train?', hint: 'Cratos picks the best slot that fits.', ok: () => st.pref, view: () => h('div', { class: 'choice-grid' },
+    { q: 'When do you like to train?', skip: diet, hint: 'Cratos picks the best slot that fits.', ok: () => st.pref, view: () => h('div', { class: 'choice-grid' },
       choice('Morning', 'Before the day starts', st.pref === 'morning', () => { st.pref = 'morning'; }), choice('Midday', 'Around lunch', st.pref === 'midday', () => { st.pref = 'midday'; }),
       choice('Evening', 'After work or school', st.pref === 'evening', () => { st.pref = 'evening'; }), choice('Whenever', 'Cratos decides', st.pref === 'any', () => { st.pref = 'any'; })) },
-    { q: 'Where do you train?', hint: 'Fine-tune exact equipment anytime in Profile → Gear.', ok: () => st.env, view: () => h('div', { class: 'stack' },
+    { q: 'Where do you train?', skip: diet, hint: 'Fine-tune exact equipment anytime in Profile → Gear.', ok: () => st.env, view: () => h('div', { class: 'stack' },
       h('div', { class: 'choice-grid' }, ENVIRONMENTS.map((e) => choice(e.label, `${e.gear.length} items`, st.env === e.id, () => { st.env = e.id; }))),
       h('div', { class: 'choice-grid' }, ['beginner', 'intermediate', 'advanced'].map((x) => choice(x[0].toUpperCase() + x.slice(1), { beginner: '< 1 year', intermediate: '1–3 years', advanced: '3+ years' }[x], st.experience === x, () => { st.experience = x; })))) },
-    { q: 'What’s your main goal?', hint: 'Sets your calorie and protein targets.', ok: () => st.goal, view: () => h('div', { class: 'choice-grid' },
+    { q: 'What’s your main goal?', hint: 'Sets your daily calories and protein.', ok: () => st.goal, view: () => h('div', { class: 'choice-grid' }, ...(diet() ? [
+      choice('Bulk', 'Gain weight: ~10% over maintenance', st.goal === 'muscle', () => { st.goal = 'muscle'; }),
+      choice('Cut', 'Lose fat: ~15% under maintenance', st.goal === 'fat_loss', () => { st.goal = 'fat_loss'; }),
+      choice('Maintain', 'Hold your weight', st.goal === 'maintain', () => { st.goal = 'maintain'; })] : [
       choice('Build muscle', 'Small surplus, high protein', st.goal === 'muscle', () => { st.goal = 'muscle'; }), choice('Lose fat', 'Moderate deficit, keep muscle', st.goal === 'fat_loss', () => { st.goal = 'fat_loss'; }),
-      choice('Performance', 'Fuel training', st.goal === 'performance', () => { st.goal = 'performance'; }), choice('Maintain', 'Hold where you are', st.goal === 'maintain', () => { st.goal = 'maintain'; })) },
+      choice('Performance', 'Fuel training', st.goal === 'performance', () => { st.goal = 'performance'; }), choice('Maintain', 'Hold where you are', st.goal === 'maintain', () => { st.goal = 'maintain'; })])) },
     { q: 'About your body', hint: 'Used only to calculate your nutrition targets. Stays on this device. Skip anything you’d rather not share.', ok: () => true, view: () => List(
       FieldRow({ title: 'Birth year', control: sel('birthYear', Array.from({ length: 80 }, (_, i) => [year - 10 - i, String(year - 10 - i)])) }),
       FieldRow({ title: 'Sex', control: sel('sex', [['male', 'Male'], ['female', 'Female'], ['unspecified', 'Prefer not to say']]) }),
       FieldRow({ title: 'Height', control: h('span', { class: 'row', style: { gap: '4px' } }, numIn('heightA', metric ? '178' : '5', metric ? '64px' : '36px'), suffix(metric ? 'cm' : 'ft'), !metric && numIn('heightB', '10', '36px'), !metric && suffix('in')) }),
       FieldRow({ title: 'Weight', control: h('span', { class: 'row', style: { gap: '4px' } }, numIn('weight', metric ? '80' : '180', '72px'), suffix(metric ? 'kg' : 'lb')) }),
       FieldRow({ title: 'Daily activity', control: sel('activity', Object.entries(ACTIVITY_LABELS).map(([k, l]) => [k, l.split(' (')[0]])) })) },
-    { q: 'What are you building?', hint: 'This sets reps, rest and exercise choice.', ok: () => st.style, view: () => h('div', { class: 'list' }, STYLES.map((x) => h('button', { class: 'list-row', type: 'button', 'aria-pressed': String(st.style === x.id), onClick: () => { st.style = x.id; haptic(); render(); } },
+    { q: 'What are you building?', skip: diet, hint: 'This sets reps, rest and exercise choice.', ok: () => st.style, view: () => h('div', { class: 'list' }, STYLES.map((x) => h('button', { class: 'list-row', type: 'button', 'aria-pressed': String(st.style === x.id), onClick: () => { st.style = x.id; haptic(); render(); } },
       h('div', { class: 'list-row__main' }, h('div', { class: 'list-row__title' }, x.label), h('div', { class: 'list-row__subtitle' }, x.blurb)),
       st.style === x.id ? h('span', { style: { color: '#fff' } }, icon('check', 18)) : null))) },
   ];
@@ -99,7 +107,7 @@ export async function mount(root) {
     const pos = vis.indexOf(step), last = pos === vis.length - 1;
     nav.replaceChildren(...[
       pos > 0 && Button({ label: 'Back', onClick: () => { step = vis[pos - 1]; render(); } }),
-      Button({ label: last ? 'Build My Plan' : 'Next', variant: 'primary', iconName: last ? 'sparkle' : null, disabled: !s.ok(), onClick: () => (last ? finish() : (step = vis[pos + 1], render())) })].filter(Boolean));
+      Button({ label: last ? (diet() ? 'Set My Targets' : 'Build My Plan') : 'Next', variant: 'primary', iconName: last ? 'sparkle' : null, disabled: !s.ok(), onClick: () => (last ? finish() : (step = vis[pos + 1], render())) })].filter(Boolean));
   }
 
   async function finish() {
@@ -109,7 +117,7 @@ export async function mount(root) {
     if (st.commit === 'school' || st.commit === 'both') add(st.school, 'School');
     const env = ENVIRONMENTS.find((e) => e.id === st.env);
     const availability = { ...av, kind: 'availability', busy, free: [], wakeTime: st.wake, sleepTime: st.sleep, daysPerWeek: st.days, sessionMinutes: st.minutes, preference: st.pref };
-    const profilePatch = { environment: st.env, style: st.style, experience: st.experience ?? p0.experience, trainingDaysTarget: st.days, sessionMinutes: st.minutes, goal: st.goal };
+    const profilePatch = diet() ? { mode: 'nutrition', goal: st.goal } : { mode: 'full', environment: st.env, style: st.style, experience: st.experience ?? p0.experience, trainingDaysTarget: st.days, sessionMinutes: st.minutes, goal: st.goal };
     if (st.birthYear) profilePatch.birthYear = Number(st.birthYear);
     if (st.sex) profilePatch.sex = st.sex;
     if (st.activity) profilePatch.activityLevel = st.activity;
@@ -117,14 +125,17 @@ export async function mount(root) {
     if (st.heightA !== '' && hcm >= 50 && hcm <= 272) profilePatch.heightCm = Math.round(hcm * 10) / 10;
     const wkg = st.weight === '' ? null : (metric ? Number(st.weight) : lbToKg(Number(st.weight)));
     if (wkg && wkg >= 20 && wkg <= 400 && (lastW == null || Math.abs(wkg - lastW) > 0.05)) await repo.create('bodyMetrics', { date: localDateKey(), weightKg: Math.round(wkg * 100) / 100, provenance: 'recorded' });
-    if (env && (!p0.gear || p0.environment !== st.env)) profilePatch.gear = env.gear;
+    if (!diet() && env && (!p0.gear || p0.environment !== st.env)) profilePatch.gear = env.gear;
     await repo.updateProfile(profilePatch);
     await saveAvailability(availability);
     const profile = await repo.getProfile();
-    const plan = planWeek({ availability, profile, today: new Date() });
+    const plan = diet() ? dietPlan(availability) : planWeek({ availability, profile, today: new Date() });
     await savePlan(plan);
     haptic('success');
-    island.flash({ icon: 'sparkle', title: 'Plan ready', subtitle: `${plan.sessions.length} sessions · ${plan.sessions.map((x) => DAY_SHORT[x.day]).join(', ')}`, duration: 4500 });
+    const t = await activeTargets();
+    island.flash(diet()
+      ? { icon: 'sparkle', title: 'Targets set', subtitle: t && !t.missing ? `${t.kcal} kcal · ${t.protein} g protein a day` : 'Add height & weight for exact numbers', duration: 4500 }
+      : { icon: 'sparkle', title: 'Plan ready', subtitle: `${plan.sessions.length} sessions · ${plan.sessions.map((x) => DAY_SHORT[x.day]).join(', ')}`, duration: 4500 });
     navigate('#/kratos', { replace: true });
   }
 

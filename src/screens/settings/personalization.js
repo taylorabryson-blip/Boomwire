@@ -33,6 +33,7 @@ export function mount(root) {
 
     return [
       NavHeader({ title: 'Personalization', back: { href: '#/settings', label: 'Settings' } }),
+      SegmentedControl({ label: 'Units', value: settings.units, options: [{ value: 'imperial', label: 'US · oz, lb, in' }, { value: 'metric', label: 'Metric' }], onChange: (units) => repo.updateSettings({ units }) }),
       SegmentedControl({ label: 'Cratos’ voice', value: v.style, options: VOICE_STYLES.map((x) => ({ value: x.id, label: x.label })),
         onChange: (style) => { setVoice({ style, voiceURI: null }); speak('I am Cratos. Let’s get to work.', { ...v, style, voiceURI: null }); } }),
       List(
@@ -40,7 +41,7 @@ export function mount(root) {
           [['voice', 'When I talk'], ['always', 'Always'], ['off', 'Off']].map(([val, l]) => h('option', { value: val, selected: v.replies === val }, l))) }),
         FieldRow({ title: 'Speaking speed', control: Stepper({ value: Math.round(v.rate * 10), min: 6, max: 14, format: (x) => `${(x / 10).toFixed(1)}×`, onChange: (x) => setVoice({ rate: x / 10 }) }) }),
         all.length > 0 && ListRow({ title: 'System voice', value: chosen?.name ?? 'Automatic', onClick: pickVoice }),
-        ListRow({ iconName: 'play', title: 'Preview Voice', chevron: false, onClick: () => speak('Today is push day. Eat around four. Then we lift.', v) })),
+),
       !canSpeak() && h('p', { class: 'section__footer' }, 'This browser can’t speak aloud.'),
       List(
         FieldRow({ title: 'Haptics', control: Switch({ checked: hapticsEnabled(), label: 'Haptics', onChange: (on) => { setHapticsEnabled(on); haptic(); } }) }),

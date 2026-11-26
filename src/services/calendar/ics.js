@@ -30,6 +30,20 @@ export function buildPlanICS(plan, from = new Date()) {
       'BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${esc(`${s.focus} in 30 minutes. Let’s go.`)}`, 'TRIGGER:-PT30M', 'END:VALARM',
       'END:VEVENT');
   }
+  // Daily meal times (diet-only plans): 20-minute events repeating every day, alert at the time.
+  for (const m of plan.nutrition?.dailyMeals ?? []) {
+    const first = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+    const start = toMin(m.time);
+    lines.push('BEGIN:VEVENT',
+      `UID:hercules-meal-${m.label.toLowerCase()}@hercules`,
+      `DTSTAMP:${stamp(new Date())}`,
+      `DTSTART:${local(first, start)}`,
+      `DTEND:${local(first, Math.min(start + 20, 1439))}`,
+      'RRULE:FREQ=DAILY',
+      `SUMMARY:${esc(`Hercules · ${m.label}`)}`,
+      'BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${esc(`${m.label} time`)}`, 'TRIGGER:PT0M', 'END:VALARM',
+      'END:VEVENT');
+  }
   lines.push('END:VCALENDAR');
   // Fold long lines at 75 octets per RFC 5545.
   return lines.map((l) => l.length <= 74 ? l : l.match(/.{1,74}/g).join('\r\n ')).join('\r\n') + '\r\n';

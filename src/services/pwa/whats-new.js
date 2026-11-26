@@ -11,6 +11,14 @@ import * as repo from '../storage/repository.js';
 import { APP_VERSION } from '../../app/version.js';
 
 export const CHANGELOG = [
+  { version: '0.8.0', items: [
+    'Real Liquid Glass: clear glass with light catching the edges and corners (true refraction where the browser supports it); the touch bubble is gone',
+    'Smooth iOS page transitions, and swipe left/right to move between tabs',
+    'Diet-only mode: bulk, cut or maintain with meal times, no workouts required',
+    'Equipment is just your equipment; every exercise now shows the equipment it needs',
+    'Settings reorganized: Schedule & Alarms (schedule, phone alarms, calendar), Notifications, Personalization, Widgets',
+    'Water goal moved into Nutrition Targets',
+  ] },
   { version: '0.7.0', items: [
     'Say what you ate: tap the mic, say “two eggs and a banana”, log it all in one tap',
     'One-tap “same as yesterday”, your usual foods, and suggestions to fill your remaining protein',

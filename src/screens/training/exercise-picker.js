@@ -5,7 +5,7 @@ import { Search, Button } from '../../components/primitives.js';
 import { openSheet } from '../../components/overlays.js';
 import { haptic } from '../../components/haptics.js';
 import { EXERCISES, EQUIPMENT_LABELS } from '../../data/exercises/exercises.js';
-import { exercisesForGear } from '../../data/exercises/gear.js';
+import { equipmentNeeded, exercisesForGear } from '../../data/exercises/gear.js';
 import { GROUPS, MUSCLE_BY_ID } from '../../data/anatomy/muscles.js';
 
 export function filterExercises(list, query, group) {
@@ -15,7 +15,7 @@ export function filterExercises(list, query, group) {
 }
 
 export function exerciseSubtitle(e) {
-  return `${e.primary.map((m) => MUSCLE_BY_ID[m]?.short).join(', ')} · ${EQUIPMENT_LABELS[e.equipment] ?? e.equipment}`;
+  return `${e.primary.map((m) => MUSCLE_BY_ID[m]?.short).join(', ')} · ${equipmentNeeded(e.id, { short: true })}`;
 }
 
 /** @returns {Promise<string[]>} chosen exercise ids */
@@ -45,7 +45,7 @@ export function pickExercises({ gear = null, title = 'Add Exercises' } = {}) {
         const b = h('button', { class: 'chip', type: 'button', 'aria-pressed': String(group === g.id), onClick: () => { group = g.id; chips.querySelectorAll('.chip').forEach((c) => c.setAttribute('aria-pressed', String(c === b))); render(); } }, g.label);
         return b;
       }),
-      Array.isArray(gear) && h('button', { class: 'chip', type: 'button', 'aria-pressed': String(onlyMine), onClick: (e) => { onlyMine = !onlyMine; e.currentTarget.setAttribute('aria-pressed', String(onlyMine)); render(); } }, 'My gear'));
+      Array.isArray(gear) && h('button', { class: 'chip', type: 'button', 'aria-pressed': String(onlyMine), onClick: (e) => { onlyMine = !onlyMine; e.currentTarget.setAttribute('aria-pressed', String(onlyMine)); render(); } }, 'Fits my equipment'));
     const sheet = openSheet({
       title,
       onClose: () => { if (!done) resolve([]); },

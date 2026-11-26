@@ -42,11 +42,11 @@ export function mount(root) {
       List(ListRow({ iconName: 'clock', title: 'Scheduled', value: String(reminders.length), onClick: () => openSheet({ title: 'Scheduled Reminders', content: h('div', { class: 'stack' },
         reminders.length ? List(...reminders.map((r) => ListRow({ title: r.title, subtitle: `${r.days.length === 7 ? 'Every day' : r.days.map((d) => DAY_SHORT[d]).join(', ')} · ${fmt12(toMin(r.time))}` })))
           : Card({}, h('div', { class: 't-subhead c-2' }, plan ? 'Nothing scheduled yet.' : 'Workout reminders appear once Cratos has built your plan.')),
-        (on || plan?.sessions?.length) && List(
+        List(
           on && ListRow({ iconName: 'bell', title: 'Send Test Notification', onClick: async () => {
             try { await sendTestPush(); toast('Test sent', { iconName: 'bell', subtitle: 'Lock your phone to see it' }); } catch (e) { toast('Test failed', { iconName: 'info', subtitle: e.message }); }
           } }),
-          plan?.sessions?.length && ListRow({ iconName: 'calendar', title: 'Add Plan to Calendar', subtitle: 'Backup alerts that work without push', onClick: () => downloadPlanICS(plan) })),
+          ListRow({ iconName: 'alarm', title: 'Schedule & Alarms', subtitle: 'Phone alarms and calendar', href: '#/alarms' })),
         h('p', { class: 't-footnote c-2', style: { padding: '0 4px' } }, 'Workout and meal reminders follow Cratos’ plan and update automatically.')) }) })),
     ];
   });

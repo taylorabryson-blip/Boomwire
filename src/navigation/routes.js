@@ -39,6 +39,7 @@ export const ROUTES = {
   gear: r('home', 2, () => import('../screens/profile/pages.js'), 'gear'),
   settings: r('home', 2, () => import('../screens/settings/settings.js')),
   widgets: r('home', 3, () => import('../screens/settings/widgets.js')),
+  alarms: r('home', 3, () => import('../screens/settings/alarms.js')),
   personalization: r('home', 3, () => import('../screens/settings/personalization.js')),
   notifications: r('home', 3, () => import('../screens/settings/notifications.js')),
 };

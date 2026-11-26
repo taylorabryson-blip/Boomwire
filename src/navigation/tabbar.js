@@ -7,7 +7,7 @@ import { TABS } from './routes.js';
 export function createTabBar() {
   const items = new Map();
   const indicator = h('div', { class: 'tabbar__indicator', style: { width: `calc((100% - 8px) / ${TABS.length})` } });
-  const inner = h('div', { class: 'tabbar__inner' }, indicator);
+  const inner = h('div', { class: 'tabbar__inner lg' }, indicator);
   TABS.forEach((t, i) => {
     const glyph = t.icon === 'kratos' ? kratosMark(28) : icon(t.icon, 24);
     const b = h('button', { class: 'tabbar__item', type: 'button', 'aria-label': t.label, dataset: { index: String(i) },
@@ -17,9 +17,24 @@ export function createTabBar() {
     inner.append(b);
   });
   const el = h('nav', { class: 'tabbar', 'aria-label': 'Primary' }, inner);
+  let activeId = null;
   return {
     el,
+    /** Hide tabs (diet-only mode hides Train); the bar re-flows and the indicator re-sizes. */
+    setHidden(ids = []) {
+      const shown = TABS.filter((t) => !ids.includes(t.id));
+      inner.style.gridTemplateColumns = `repeat(${shown.length}, 1fr)`;
+      indicator.style.width = `calc((100% - 8px) / ${shown.length})`;
+      for (const [k, b] of items) {
+        const i = shown.findIndex((t) => t.id === k);
+        b.hidden = i < 0; b.style.display = i < 0 ? 'none' : '';
+        if (i >= 0) b.dataset.index = String(i);
+      }
+      if (activeId) { indicator.style.transform = ''; this.setActive(activeId); }
+    },
     setActive(id) {
+      activeId = id;
+      indicator.style.opacity = items.get(id)?.hidden ? '0' : '';
       for (const [k, b] of items) {
         if (k === id) {
           b.setAttribute('aria-current', 'page');

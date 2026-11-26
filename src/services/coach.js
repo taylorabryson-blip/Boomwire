@@ -4,7 +4,7 @@
  */
 import * as repo from './storage/repository.js';
 import { respond, GREETING } from '../engines/coach/kratos.js';
-import { planWeek, DEFAULT_AVAILABILITY } from '../engines/coach/planner.js';
+import { planWeek, dietPlan, DEFAULT_AVAILABILITY } from '../engines/coach/planner.js';
 import { localDateKey } from '../utils/dates.js';
 import { activeTargets } from './nutrition/log.js';
 import { registerCustomGear } from '../data/exercises/gear.js';
@@ -29,7 +29,7 @@ export async function regeneratePlan() {
   const [av, profile] = await Promise.all([getAvailability(), repo.getProfile()]);
   if (!av && !(await getPlan())) return null; // nothing set up yet: the wizard builds the first plan
   registerCustomGear(profile.customGear?.items ?? []);
-  const plan = planWeek({ availability: av ?? DEFAULT_AVAILABILITY, profile, today: new Date() });
+  const plan = profile.mode === 'nutrition' ? dietPlan(av ?? DEFAULT_AVAILABILITY) : planWeek({ availability: av ?? DEFAULT_AVAILABILITY, profile, today: new Date() });
   return savePlan(plan);
 }
 

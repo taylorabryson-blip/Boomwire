@@ -65,6 +65,8 @@ Users under ~19 (by birth year) never receive restrictive nutrition advice. Krat
 ## Phone alarms (`engines/coach/alarms.js`)
 | K6 | Per day: wake time; pre-workout meal/snack time from K5; a heads-up `lead` minutes (your workout reminder setting, default 30) before each session. Delivered to the Clock app through the user’s “Hercules Alarms” shortcut (Create Alarm) |
 
+| K7 | Diet-only plan: no sessions; breakfast 30 min after waking, dinner ≥ 3 h before bed (at most 11 h after breakfast), lunch midway (rounded to 15 min). Meal times feed alarms and calendar |
+
 ## Schedule parser rules (`engines/coach/parser.js`)
 Bare times in a range: start 7–11 → AM, 12 → noon, 1–4 → PM, 5–6 → AM; the end is the first matching clock time after the start. Every assumption is echoed back to the user.
 

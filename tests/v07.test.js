@@ -60,3 +60,20 @@ test('profile accepts custom gear ids, rejects junk', () => {
   assert.deepEqual(validate('profile', { ...env, gear: ['barbell', 'custom:my_rack'], customGear: { items: [] } }), []);
   assert.ok(validate('profile', { ...env, gear: ['spaceship'] }).length);
 });
+
+test('K7 diet-only plan: three meals spread across the waking day, no sessions', async () => {
+  const { dietPlan } = await import('../src/engines/coach/planner.js');
+  const p = dietPlan({ wakeTime: '06:30', sleepTime: '22:30' });
+  assert.equal(p.mode, 'nutrition'); assert.equal(p.sessions.length, 0);
+  assert.deepEqual(p.nutrition.dailyMeals.map((m) => m.label), ['Breakfast', 'Lunch', 'Dinner']);
+  assert.equal(p.nutrition.dailyMeals[0].time, '07:00');
+  assert.ok(p.nutrition.dailyMeals[2].time <= '19:30');
+  assert.deepEqual(alarmsForDay(p, { wakeTime: '06:30' }, 3).map((a) => a.label), ['Wake up', 'Breakfast', 'Lunch', 'Dinner']);
+});
+
+test('equipment text: workouts list what they need; gear never "unlocks"', async () => {
+  const { equipmentNeeded } = await import('../src/data/exercises/gear.js');
+  assert.equal(equipmentNeeded('push_up'), 'No equipment');
+  assert.equal(equipmentNeeded('back_squat', { short: true }), 'Barbell + Power rack');
+  assert.match(equipmentNeeded('back_squat'), /Squat stands/);
+});

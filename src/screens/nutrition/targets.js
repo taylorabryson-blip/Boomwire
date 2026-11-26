@@ -1,6 +1,10 @@
 /** Calorie & macro targets: Auto (Mifflin-St Jeor, shown with its working) or Manual. */
+import { icon } from '../../components/icons.js';
+import { openGoalSheet } from '../shared/hydration-ui.js';
+import { volumeString } from '../../utils/units.js';
+import { waterGoal } from '../../services/nutrition/log.js';
 import { h } from '../../components/dom.js';
-import { NavHeader, Section, Card, List, ListRow, FieldRow, Select, SegmentedControl, Button, Provenance } from '../../components/primitives.js';
+import { NavHeader, Section, Card, List, ListRow, FieldRow, Select, SegmentedControl, Button, Provenance, IconButton } from '../../components/primitives.js';
 import { toast, openSheet } from '../../components/overlays.js';
 import * as repo from '../../services/storage/repository.js';
 import { navigate } from '../../navigation/nav.js';
@@ -35,19 +39,25 @@ export function mount(root) {
         } })];
     }
 
+    const wg = await waterGoal(settings);
     const explain = t.missing?.length ? '' : `Mifflin-St Jeor resting energy ${t.bmr} kcal × activity ${ACTIVITY_FACTORS[profile.activityLevel]} = ${t.tdee} kcal maintenance${t.goalApplied !== 'maintain' && t.goalApplied !== 'consistency' ? `, then ${t.goalApplied === 'fat_loss' ? '−15%' : t.goalApplied === 'muscle' ? '+10%' : '+5%'} for your goal` : ''}. Protein is set per kg of body weight for your goal. Fat is 27.5% of calories, carbs fill the rest, fiber 14 g per 1,000 kcal.${t.developing ? ' You’re still growing, so targets never go below maintenance.' : ''} These are estimates — real needs vary ±10% or more. Adjust with Manual mode anytime.`;
-    return [header, seg,
+    const infoHeader = NavHeader({ title: 'Targets', back: { href: '#/nutrition', label: 'Nutrition' },
+      trailing: !t.missing?.length && IconButton({ iconName: 'info', label: 'How targets work', onClick: () => openSheet({ title: 'How Targets Work', content: h('p', { class: 't-subhead c-2', style: { margin: 0, lineHeight: 1.45 } }, explain) }) }) });
+    return [infoHeader, seg,
       Card({ badge: Provenance('estimated') },
         t.missing?.length
           ? h('div', {}, h('div', { class: 't-headline' }, 'A few details needed'), h('p', { class: 't-subhead c-2', style: { margin: '4px 0 0' } }, `Add your ${t.missing.join(', ')} to personalize targets.`))
           : h('div', { class: 'tiles', style: { gridTemplateColumns: 'repeat(4, minmax(0,1fr))' } },
-            ...[['kcal', t.kcal, ''], ['protein', t.protein, 'g'], ['carbs', t.carbs, 'g'], ['fat', t.fat, 'g']].map(([l, v, u]) => h('div', {}, h('div', { class: 'tile__value' }, String(v), h('span', { class: 'stat__unit' }, u)), h('div', { class: 'tile__label' }, l))))),
+            ...[['kcal', t.kcal, ''], ['protein', t.protein, 'g'], ['carbs', t.carbs, 'g'], ['fat', t.fat, 'g']].map(([l, v, u]) => h('div', {}, h('div', { class: 'tile__value' }, String(v), h('span', { class: 'stat__unit' }, u)), h('div', { class: 'tile__label' }, l)))),
+        h('button', { class: 'water-target', type: 'button', onClick: () => openGoalSheet({ ...settings }) }, icon('drop', 15),
+          h('span', { class: 'grow' }, wg.ml ? `${volumeString(wg.ml, settings.units)} water a day` : 'Add weight for a water goal'),
+          h('span', { class: 'c-2' }, wg.auto ? 'Auto' : 'Yours'), icon('chevronRight', 14))),
       List(
         FieldRow({ title: 'Activity', control: Select({ value: profile.activityLevel, onChange: (v) => repo.updateProfile({ activityLevel: v }), options: Object.entries(ACTIVITY_LABELS).map(([k, l]) => ({ value: k, label: l.split(' (')[0] })) }) }),
         FieldRow({ title: 'Goal', control: Select({ value: profile.goal, onChange: (v) => repo.updateProfile({ goal: v }), options: GOAL_OPTS }) }),
         ListRow({ title: 'Weight', value: w ? weightString(w.weightKg, settings.units) : 'Add', href: '#/profile-personal' }),
         ListRow({ title: 'Height · age · sex', value: [profile.heightCm ? heightString(profile.heightCm, settings.units) : null, age ? `${age}` : null, profile.sex && profile.sex !== 'unspecified' ? profile.sex[0].toUpperCase() : null].filter(Boolean).join(' · ') || 'Add', href: '#/profile-personal' }),
-        !t.missing?.length && ListRow({ iconName: 'info', title: 'How it’s calculated', onClick: () => openSheet({ title: 'How Targets Work', content: h('p', { class: 't-subhead c-2', style: { margin: 0, lineHeight: 1.45 } }, explain) }) })),
+        ),
     ];
   });
 }

@@ -4,12 +4,9 @@ import { toast, openSheet } from '../../components/overlays.js';
 import * as repo from '../../services/storage/repository.js';
 import { SCHEMA_VERSION, isPersisted, requestPersistence } from '../../services/storage/db.js';
 import { downloadBackup, importBackup } from '../../services/storage/backup.js';
-import { volumeString } from '../../utils/units.js';
-import { openGoalSheet } from '../shared/hydration-ui.js';
 import { liveScreen } from '../shared/live.js';
 import { APP_VERSION } from '../../app/version.js';
 import { openWhatsNew } from '../../services/pwa/whats-new.js';
-import { waterGoal } from '../../services/nutrition/log.js';
 
 function pickBackupFile() {
   const input = h('input', { type: 'file', accept: 'application/json,.json', style: { display: 'none' } });
@@ -46,6 +43,7 @@ function openAboutSheet() {
       ListRow({ title: 'Data schema', value: `v${SCHEMA_VERSION}` }),
       ListRow({ title: 'Build', value: 'Phases 1–7' }),
       ListRow({ iconName: 'sparkle', title: 'What’s New', onClick: () => { openWhatsNew(); } }),
+      ListRow({ iconName: 'download', title: 'Check for Updates', chevron: false, onClick: checkForUpdates }),
       ListRow({ title: '3D anatomy', subtitle: 'BodyParts3D © DBCLS · CC BY-SA 2.1 JP' }),
       ListRow({ title: 'Food data', subtitle: 'USDA FoodData Central · Open Food Facts (ODbL)' })),
     h('p', { class: 't-footnote c-2', style: { padding: '0 4px' } }, 'Cratos plans are generated on your device. Muscle heat maps are estimates from logged sets — not measured activation.')) });
@@ -61,21 +59,17 @@ async function checkForUpdates() {
 export function mount(root) {
   return liveScreen(root, async (refresh) => {
     const [settings, persisted] = await Promise.all([repo.getSettings(), isPersisted()]);
-    const wg = await waterGoal(settings);
     return [
       NavHeader({ title: 'Settings', back: { href: '#/profile', label: 'Profile' } }),
-      SegmentedControl({ label: 'Units', value: settings.units,
-        options: [{ value: 'imperial', label: 'US · oz, lb, in' }, { value: 'metric', label: 'Metric' }],
-        onChange: (units) => repo.updateSettings({ units }) }),
-      List(
-        ListRow({ iconName: 'drop', title: 'Daily water goal', value: wg.ml ? `${wg.auto ? 'Auto · ' : ''}${volumeString(wg.ml, settings.units)}` : 'Not set', onClick: () => openGoalSheet(settings) }),
+      h('div', {}, h('div', { class: 'section__header t-footnote c-2' }, 'YOUR DAY'), List(
+        ListRow({ iconName: 'alarm', title: 'Schedule & Alarms', href: '#/alarms' }),
+        ListRow({ iconName: 'bell', title: 'Notifications', href: '#/notifications' }))),
+      h('div', {}, h('div', { class: 'section__header t-footnote c-2' }, 'LOOK & FEEL'), List(
         ListRow({ iconName: 'palette', title: 'Appearance & Personalization', href: '#/personalization' }),
-        ListRow({ iconName: 'bell', title: 'Notifications', href: '#/notifications' }),
-        ListRow({ iconName: 'widget', title: 'Widgets & Alarms', href: '#/widgets' }),
-        ListRow({ iconName: 'shield', title: 'Your Data', value: persisted ? 'Protected' : '', onClick: () => openDataSheet(persisted, refresh) })),
+        ListRow({ iconName: 'widget', title: 'Widgets', href: '#/widgets' }))),
       List(
-        ListRow({ iconName: 'download', title: 'Check for Updates', value: APP_VERSION, onClick: checkForUpdates }),
-        ListRow({ iconName: 'info', title: 'About', onClick: openAboutSheet })),
+        ListRow({ iconName: 'shield', title: 'Your Data', value: persisted ? 'Protected' : '', onClick: () => openDataSheet(persisted, refresh) }),
+        ListRow({ iconName: 'info', title: 'About & Updates', value: APP_VERSION, onClick: openAboutSheet })),
     ];
   });
 }

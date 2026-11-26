@@ -33,7 +33,7 @@ export async function library(root) {
     const pool = onlyMine ? EXERCISES.filter((e) => canDo(e.id, profile.gear)) : EXERCISES;
     const list = filterExercises(pool, query, group);
     results.replaceChildren(list.length ? List(...list.map((e) => ListRow({ title: e.name, subtitle: exerciseSubtitle(e), href: `#/exercise?id=${e.id}` })))
-      : Card({}, EmptyState({ inline: true, title: 'No matches', body: onlyMine ? 'Try “All gear”, or add equipment in Profile → Gear.' : 'Try a muscle like “lats” or “quads”.' })));
+      : Card({}, EmptyState({ inline: true, title: 'No matches', body: onlyMine ? 'Try “All exercises”, or add equipment in Profile → Gear.' : 'Try a muscle like “lats” or “quads”.' })));
   };
   const chips = h('div', { class: 'chips chips--scroll' }, [{ id: null, label: 'All' }, ...GROUPS].map((g) => {
     const b = h('button', { class: 'chip', type: 'button', 'aria-pressed': String(group === g.id), onClick: () => { group = g.id; chips.querySelectorAll('.chip').forEach((c) => c.setAttribute('aria-pressed', String(c === b))); render(); } }, g.label);
@@ -42,7 +42,7 @@ export async function library(root) {
   root.append(
     NavHeader({ title: 'Library', back: { href: '#/train', label: 'Train' } }),
     Search({ placeholder: `Search ${EXERCISES.length} exercises`, value: query, onInput: (v) => { query = v; render(); } }),
-    SegmentedControl({ label: 'Filter', value: onlyMine ? 'mine' : 'all', onChange: (v) => { onlyMine = v === 'mine'; render(); }, options: [{ value: 'mine', label: 'My gear' }, { value: 'all', label: 'All gear' }] }),
+    SegmentedControl({ label: 'Filter', value: onlyMine ? 'mine' : 'all', onChange: (v) => { onlyMine = v === 'mine'; render(); }, options: [{ value: 'mine', label: 'Fits my equipment' }, { value: 'all', label: 'All exercises' }] }),
     chips, results);
   render();
 }
