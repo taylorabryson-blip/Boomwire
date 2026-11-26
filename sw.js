@@ -3,7 +3,7 @@
  * User data lives in IndexedDB and is never touched here.
  * Bump VERSION on every release so clients pick up new code.
  */
-const VERSION = 'v0.4.0';
+const VERSION = 'v0.4.1';
 const CACHE = `hercules-shell-${VERSION}`;
 const CORE = ['./', './index.html', './manifest.webmanifest', './assets/icons/icon-192.png', './assets/icons/icon-512.png'];
 
@@ -17,14 +17,17 @@ self.addEventListener('activate', (e) => {
     .then(() => self.clients.claim()));
 });
 
-// Network-first for code (so updates land immediately), cache fallback offline.
+// Network-first, always revalidated with the server (cache: 'no-cache') so a
+// phone never mixes old and new code files after an update. Offline → cache.
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
   if (e.request.method !== 'GET' || url.origin !== location.origin) return;
   e.respondWith((async () => {
     const cache = await caches.open(CACHE);
     try {
-      const res = await fetch(e.request);
+      const res = e.request.mode === 'navigate'
+        ? await fetch(e.request.url, { cache: 'no-cache', credentials: 'same-origin' })
+        : await fetch(new Request(e.request, { cache: 'no-cache' }));
       if (res.ok) cache.put(e.request, res.clone());
       return res;
     } catch {

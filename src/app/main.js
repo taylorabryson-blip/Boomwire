@@ -11,14 +11,6 @@ import { startReminderClock } from '../services/notifications/local.js';
 document.addEventListener('contextmenu', (e) => {
   if (!e.target.closest('input, textarea, .selectable')) e.preventDefault();
 });
-// iOS: stop double-tap zoom on fast taps.
-let lastTouch = 0;
-document.addEventListener('touchend', (e) => {
-  const now = Date.now();
-  if (now - lastTouch < 300 && !e.target.closest('input, textarea, select')) e.preventDefault();
-  lastTouch = now;
-}, { passive: false });
-
 async function boot() {
   const app = document.getElementById('app');
   try {
@@ -37,6 +29,7 @@ async function boot() {
   registerServiceWorker();
   startWorkoutActivity();
   startReminderClock();
+  window.__herculesBooted = true;
 }
 
-boot();
+boot().catch((e) => { window.__herculesBootError?.(e); });

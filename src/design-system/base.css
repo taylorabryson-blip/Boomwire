@@ -1,6 +1,8 @@
 /* Base reset + typography utilities */
 *, *::before, *::after { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; background: var(--c-bg); }
+/* No double-tap-to-zoom delay, without swallowing fast taps. */
+html { touch-action: manipulation; }
 body {
   min-height: 100%;
   color: var(--c-text-1);
