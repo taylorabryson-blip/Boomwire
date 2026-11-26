@@ -10,6 +10,7 @@ const files = [
   ['examples/jsm/controls/OrbitControls.js', 'addons/controls/OrbitControls.js'],
   ['examples/jsm/loaders/GLTFLoader.js', 'addons/loaders/GLTFLoader.js'],
   ['examples/jsm/utils/BufferGeometryUtils.js', 'addons/utils/BufferGeometryUtils.js'],
+  ['examples/jsm/libs/meshopt_decoder.module.js', 'addons/libs/meshopt_decoder.module.js'],
   ['LICENSE', 'LICENSE'],
 ];
 for (const [from, to] of files) {

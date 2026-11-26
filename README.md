@@ -6,7 +6,7 @@ A personal fitness and physical-performance operating system, built as an
 iPhone-first Progressive Web App with an architecture ready for a future
 native SwiftUI layer.
 
-**Status: v0.4.0 — Phases 1–4 complete + Kratos coach + push reminders.**
+**Status: v0.5.0 — Phases 1–4 complete + Kratos coach + push reminders.**
 
 ## Run it
 
@@ -34,13 +34,14 @@ Push to GitHub → Settings → Pages → Source: `main` / root. Hash routing
 | iOS feel | Floating glass tab bar with spring indicator, Dynamic Island live activities (rest timer, workout, confirmations), collapsing large titles, card-presentation sheets with drag-to-dismiss, view transitions, haptics (iOS 18 switch trick), no long-press link previews |
 | Kratos | On-device coach: understands schedules in plain English, builds a weekly plan (days, times, splits, exercises for your gear), meal timing, motivation, lagging-area analysis, calendar export |
 | Training (Phase 3) | 61-exercise database, workout logger with previous-set column, rest timer, PRs, templates, history, Epley e1RM trend |
-| Anatomy (Phase 4) | Three.js GLB muscle model (24 muscles, 46 meshes), tap-to-select, front/back, labels, heat map: Recent · Volume · Exercises · Frequency × Today/7/30/90/All |
+| Anatomy (Phase 4) | Real human anatomy (BodyParts3D scan data: 437 muscles, 251 bones; 24 tracked muscle groups), tap-to-select, front/back, labels, heat map: Recent · Volume · Exercises · Frequency × Today/7/30/90/All |
 | Body (Phase 2) | Profile, desired build, focus areas, environment + gear checklist, weight & measurement logging with trends |
 | Water | US units (oz + cups) by default |
 | Notifications | Web Push via Supabase edge function + pg_cron (works with the app closed once added to the Home Screen, iOS 16.4+), in-app reminders, .ics calendar fallback |
 
-The 3D figure is a simplified procedural model; any GLB with meshes named
-`muscle__<id>__<side>` can replace it without code changes.
+The 3D body is a real human anatomy model built from BodyParts3D scan data
+(437 muscles + 251 bones, CC BY-SA 2.1 JP — see `assets/models/ATTRIBUTION.md`),
+rebuilt with `npm run build:anatomy`.
 
 ## Layout
 

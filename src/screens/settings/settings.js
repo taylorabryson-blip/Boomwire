@@ -51,7 +51,8 @@ export function mount(root) {
         List(
           ListRow({ title: 'Version', value: APP_VERSION }),
           ListRow({ title: 'Data schema', value: `v${SCHEMA_VERSION}` }),
-          ListRow({ title: 'Build phase', value: '4 · Anatomy + Kratos' }))),
+          ListRow({ title: 'Build phase', value: '4 · Anatomy + Kratos' }),
+          ListRow({ title: '3D anatomy', subtitle: 'BodyParts3D © DBCLS · CC BY-SA 2.1 JP' }))),
     ];
   });
 }
