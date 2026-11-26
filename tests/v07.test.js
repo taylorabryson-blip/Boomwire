@@ -77,3 +77,29 @@ test('equipment text: workouts list what they need; gear never "unlocks"', async
   assert.equal(equipmentNeeded('back_squat', { short: true }), 'Barbell + Power rack');
   assert.match(equipmentNeeded('back_squat'), /Squat stands/);
 });
+
+test('K8 move, swap, skip and pin sessions', async () => {
+  const { moveSession, skipSession, conflicts, applyPins } = await import('../src/engines/coach/reschedule.js');
+  const av = { wakeTime: '06:30', busy: [{ day: 3, start: '09:00', end: '17:00', label: 'Work' }] };
+  const plan = { sessions: [{ day: 0, start: '18:00', end: '19:00', focus: 'Upper', exercises: [] }, { day: 2, start: '18:00', end: '19:00', focus: 'Lower', exercises: [] }], restDays: [1, 3, 4, 5, 6], nutrition: { meals: [] } };
+  const moved = moveSession(plan, 0, { day: 1, start: '07:00' }, av);
+  assert.deepEqual(moved.sessions.map((s) => [s.focus, s.day, s.start, s.end]), [['Upper', 1, '07:00', '08:00'], ['Lower', 2, '18:00', '19:00']]);
+  assert.deepEqual(moved.restDays, [0, 3, 4, 5, 6]);
+  assert.equal(moved.nutrition.meals.find((m) => m.day === 1).post.time, '09:00');
+  const swapped = moveSession(plan, 0, { day: 2, start: '17:00' }, av);
+  assert.deepEqual(swapped.sessions.map((s) => [s.focus, s.day]), [['Lower', 0], ['Upper', 2]]);
+  assert.equal(skipSession(plan, 2, av).sessions.length, 1);
+  assert.equal(conflicts(av, 3, '16:00', '17:00').length, 1);
+  assert.equal(conflicts(av, 3, '17:00', '18:00').length, 0);
+  const pinned = applyPins(plan, [{ focus: 'Lower', day: 5, start: '10:00' }], av);
+  assert.deepEqual(pinned.sessions.find((s) => s.focus === 'Lower').day, 5);
+});
+
+test('K8 pins stay attached to the exact session when focuses repeat (two Upper days)', async () => {
+  const { applyPins } = await import('../src/engines/coach/reschedule.js');
+  const ex = (n) => [{ exerciseId: n }];
+  const plan = { sessions: [{ day: 0, start: '18:00', end: '19:00', focus: 'Upper', exercises: ex('a') }, { day: 1, start: '18:00', end: '19:00', focus: 'Lower', exercises: ex('b') },
+    { day: 3, start: '18:00', end: '19:00', focus: 'Upper', exercises: ex('c') }, { day: 5, start: '18:00', end: '19:00', focus: 'Lower', exercises: ex('d') }], restDays: [], nutrition: { meals: [] } };
+  const out = applyPins(plan, [{ focus: 'Upper', fromDay: 3, day: 5, start: '18:00' }], { wakeTime: '06:30' });
+  assert.deepEqual(out.sessions.map((s) => [s.focus, s.day]), [['Upper', 0], ['Lower', 1], ['Lower', 3], ['Upper', 5]]);
+});

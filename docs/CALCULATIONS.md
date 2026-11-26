@@ -66,6 +66,7 @@ Users under ~19 (by birth year) never receive restrictive nutrition advice. Krat
 | K6 | Per day: wake time; pre-workout meal/snack time from K5; a heads-up `lead` minutes (your workout reminder setting, default 30) before each session. Delivered to the Clock app through the user’s “Hercules Alarms” shortcut (Create Alarm) |
 
 | K7 | Diet-only plan: no sessions; breakfast 30 min after waking, dinner ≥ 3 h before bed (at most 11 h after breakfast), lunch midway (rounded to 15 min). Meal times feed alarms and calendar |
+| K8 | You can move or skip sessions. Moving onto a day that has a session swaps them; duration is kept; meal timing (K5) is recomputed. “This week” changes keep a backup that is restored after Sunday; “every week” changes are pins (focus + the day Cratos originally planned) re-applied after every re-plan. Overlaps with commitments are warned, never blocked |
 
 ## Schedule parser rules (`engines/coach/parser.js`)
 Bare times in a range: start 7–11 → AM, 12 → noon, 1–4 → PM, 5–6 → AM; the end is the first matching clock time after the start. Every assumption is echoed back to the user.

@@ -12,7 +12,6 @@
  *  yet, so there the material is built from clear glass + rim specular + edge
  *  shading (CSS in components.css), which is as far as WebKit allows.
  */
-const PRESSABLE = '.btn, .chip, .icon-btn, button.list-row, a.list-row, .card--tap, .tabbar__item, .segmented__item, .nav-tile, .choice, .composer__send, .composer__mic, .banner__action, .livebar, .set-check, .add-btn, .stepper button, .scale5 button, .accordion__head, .gear-tile, .meal-tile__main, .ql__mic';
 const android = () => document.documentElement.dataset.platform === 'android';
 
 function ripple(el, e) {
@@ -25,15 +24,80 @@ function ripple(el, e) {
   setTimeout(() => s.remove(), 560);
 }
 
+/* ---------------- Liquid Glass press (iOS 26 behaviour) ----------------
+ * Press a control and it becomes a glass lens: it swells, its own content bends at
+ * the rim (an SVG displacement filter on the element itself — this kind of filter
+ * Safari does render), a specular light follows your finger and the rim lights up.
+ * Release and it springs back. Rows (full-width list items) only highlight, as on iOS. */
+const LENS = '.btn, .chip, .icon-btn, .tabbar__item, .segmented__item, .add-btn, .composer__send, .composer__mic, .gear-tile, .meal-tile__main, .nav-tile, .choice, .day-picker__d, .week-day, .ql__mic, .set-check, .stepper button, .meal-time, .banner__action';
+const ROW = 'button.list-row, a.list-row, .card--tap, .livebar, .scale5 button, .accordion__head';
+
+function lensFilter(w, h, radius) {
+  const key = `lens-${w}x${h}r${Math.round(radius)}`;
+  ensureDefs();
+  if (!defs.querySelector(`#${key}`)) {
+    // Element-relative units: Safari and Chrome agree on these for filters on HTML elements.
+    // In bounding-box units the displacement scale multiplies by width on x and height on y,
+    // so the map is pre-scaled per axis to give the same bend (in px) on every edge.
+    const bezel = Math.max(5, Math.min(16, Math.min(w, h) * 0.3));
+    const m = Math.min(w, h);
+    const scale = (bezel * 0.9) / m;
+    const url = displacementMap(w, h, radius, bezel, { kx: m / w, ky: m / h });
+    defs.insertAdjacentHTML('beforeend', `<filter id="${key}" x="0" y="0" width="1" height="1" filterUnits="objectBoundingBox" primitiveUnits="objectBoundingBox" color-interpolation-filters="sRGB">
+      <feImage href="${url}" x="0" y="0" width="1" height="1" preserveAspectRatio="none" result="map"/>
+      <feDisplacementMap in="SourceGraphic" in2="map" scale="${scale.toFixed(4)}" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>`);
+  }
+  return key;
+}
+
+function pressLens(el, e) {
+  const r = el.getBoundingClientRect();
+  const w = Math.round(r.width), h = Math.round(r.height);
+  if (w < 8 || h < 8) return null;
+  const cs = getComputedStyle(el);
+  if (cs.position === 'static') el.style.position = 'relative';
+  const radius = Math.min(parseFloat(cs.borderTopLeftRadius) || 12, h / 2);
+  const grow = w < 70 ? 1.14 : w < 180 ? 1.07 : 1.035; // small controls swell more, like iOS
+  el.style.setProperty('--lg-grow', String(grow));
+  el.style.filter = `url(#${lensFilter(w, h, radius)})`;
+  let light = el.querySelector(':scope > .lg-light');
+  if (!light) { light = document.createElement('span'); light.className = 'lg-light'; el.append(light); }
+  track(el, e);
+  el.classList.add('lg-press');
+  return el;
+}
+function track(el, e) {
+  const r = el.getBoundingClientRect();
+  const x = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)), y = Math.max(0, Math.min(1, (e.clientY - r.top) / r.height));
+  el.style.setProperty('--px', `${x * 100}%`); el.style.setProperty('--py', `${y * 100}%`);
+  // a little stretch toward the finger, like the gel follows you
+  el.style.setProperty('--sx', `${(x - 0.5) * 4}px`); el.style.setProperty('--sy', `${(y - 0.5) * 3}px`);
+}
+function releaseLens(el) {
+  if (!el) return;
+  el.classList.remove('lg-press');
+  el.classList.add('lg-release');
+  setTimeout(() => {
+    if (el.classList.contains('lg-press')) return;
+    el.classList.remove('lg-release');
+    el.style.filter = '';
+    el.querySelector(':scope > .lg-light')?.remove();
+  }, 420);
+}
+
 export function installTouchEffects() {
-  let pressed = null;
-  const release = () => { pressed?.classList.remove('is-pressed'); pressed = null; };
+  let lens = null, row = null;
+  const release = () => { releaseLens(lens); lens = null; row?.classList.remove('is-pressed'); row = null; };
   document.addEventListener('pointerdown', (e) => {
-    const el = e.target.closest(PRESSABLE);
+    const el = e.target.closest(`${LENS}, ${ROW}`);
     if (!el || el.disabled) return;
     if (android()) { ripple(el, e); return; }
-    release(); pressed = el; el.classList.add('is-pressed');
+    release();
+    if (el.matches(ROW) || document.documentElement.dataset.glass === 'off') { row = el; el.classList.add('is-pressed'); return; }
+    lens = pressLens(el, e);
   }, { passive: true });
+  document.addEventListener('pointermove', (e) => { if (lens) track(lens, e); }, { passive: true });
   document.addEventListener('pointerup', release, { passive: true });
   document.addEventListener('pointercancel', release, { passive: true });
   document.addEventListener('scroll', release, { passive: true, capture: true });
@@ -49,8 +113,8 @@ let defs = null, seq = 0;
 const maps = new Map();
 
 /** Displacement map: pixels inside the bezel sample the backdrop further out along the edge normal (a convex lens). */
-function displacementMap(w, h, radius, bezel) {
-  const key = `${w}x${h}r${radius}b${bezel}`;
+function displacementMap(w, h, radius, bezel, { kx = 1, ky = 1 } = {}) {
+  const key = `${w}x${h}r${radius}b${bezel}k${kx.toFixed(3)}${ky.toFixed(3)}`;
   if (maps.has(key)) return maps.get(key);
   const c = document.createElement('canvas'); c.width = w; c.height = h;
   const ctx = c.getContext('2d');
@@ -69,8 +133,8 @@ function displacementMap(w, h, radius, bezel) {
       const t = depth < bezel ? 1 - depth / bezel : 0;
       const m = t * t * (3 - 2 * t); // smooth falloff: strongest bending right at the rim
       const i = (y * w + x) * 4;
-      img.data[i] = 128 + nx * m * 127;
-      img.data[i + 1] = 128 + ny * m * 127;
+      img.data[i] = 128 + nx * m * 127 * kx;
+      img.data[i + 1] = 128 + ny * m * 127 * ky;
       img.data[i + 2] = 128; img.data[i + 3] = 255;
     }
   }
@@ -80,18 +144,21 @@ function displacementMap(w, h, radius, bezel) {
   return url;
 }
 
+function ensureDefs() {
+  if (defs) return;
+  defs = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  defs.setAttribute('width', '0'); defs.setAttribute('height', '0');
+  defs.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden';
+  document.body.append(defs);
+}
+
 function refract(el) {
   const r = el.getBoundingClientRect();
   const w = Math.round(r.width), h = Math.round(r.height);
   if (w < 8 || h < 8) return;
   const radius = Math.min(parseFloat(getComputedStyle(el).borderTopLeftRadius) || 16, h / 2);
   const bezel = Math.max(6, Math.min(22, h * 0.3));
-  if (!defs) {
-    defs = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    defs.setAttribute('width', '0'); defs.setAttribute('height', '0');
-    defs.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden';
-    document.body.append(defs);
-  }
+  ensureDefs();
   const id = el.dataset.lgId || `lg${++seq}`;
   el.dataset.lgId = id;
   defs.querySelector(`#${id}`)?.remove();

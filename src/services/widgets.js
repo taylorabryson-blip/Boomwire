@@ -48,7 +48,7 @@ export async function disableSync() {
 
 /** Alarms for a day as [{time,label}], respecting the user's workout-reminder lead time. */
 export async function alarmsFor(date) {
-  const [plan, av, s] = await Promise.all([repo.get('coach', 'plan').catch(() => null), repo.get('coach', 'availability').catch(() => null), repo.getSettings()]);
+  const [plan, av, s] = await Promise.all([import('./coach.js').then((m) => m.getPlan()).catch(() => null), repo.get('coach', 'availability').catch(() => null), repo.getSettings()]);
   const lead = s.reminders?.workout?.leadMin ?? 30;
   return alarmsForDay(plan, av, dowOf(date), { leadMin: lead });
 }
@@ -58,7 +58,7 @@ export async function snapshot() {
   const today = localDateKey(now);
   const tomorrow = new Date(now); tomorrow.setDate(now.getDate() + 1);
   const [settings, food, water, targets, plan] = await Promise.all([
-    repo.getSettings(), repo.listByDate('foodLogs', today), repo.listByDate('hydrationLogs', today), activeTargets(), repo.get('coach', 'plan').catch(() => null)]);
+    repo.getSettings(), repo.listByDate('foodLogs', today), repo.listByDate('hydrationLogs', today), activeTargets(), import('./coach.js').then((m) => m.getPlan()).catch(() => null)]);
   const wg = await waterGoal(settings);
   const t = totals(food);
   const waterMl = water.filter((x) => !x.deletedAt).reduce((a, x) => a + x.amountMl, 0);

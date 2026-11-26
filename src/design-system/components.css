@@ -507,11 +507,9 @@ html:not([data-platform="android"]) .lg::before { /* specular rim: light catches
 .btn, .chip, .icon-btn, .card--tap, .nav-tile, .choice, .add-btn, .gear-tile, .meal-tile__main, .composer__send, .composer__mic, .ql__mic, .livebar, .set-check {
   transition: transform .45s cubic-bezier(.2,1.6,.35,1), filter .2s, opacity .2s;
 }
-.is-pressed { transform: scale(.96); filter: brightness(.82); transition: transform .12s ease-out, filter .1s !important; }
 button.list-row.is-pressed, a.list-row.is-pressed { transform: none; filter: none; background: rgba(255,255,255,.08); }
-.tabbar__item.is-pressed { transform: scale(.9); filter: none; }
-.segmented__item.is-pressed { transform: scale(.95); filter: none; }
 .livebar.is-pressed { transform: translate(-50%, 0) scale(.97); }
+.card--tap.is-pressed { transform: scale(.985); }
 
 /* Swipe between tabs */
 .screen-in-right { animation: screen-in-right .38s var(--ease-sheet) both; }
@@ -534,3 +532,33 @@ html.vt-running .tabbar__inner { background: rgba(26,26,28,.94) !important; }
 /* Row values never collide with titles: the value shrinks and truncates instead */
 .list-row__main { min-width: 0; }
 .list-row__value { flex-shrink: 1; min-width: 0; max-width: 58%; overflow: hidden; text-overflow: ellipsis; }
+/* Move a session */
+button.week-day { font: inherit; color: inherit; cursor: pointer; }
+.btn-row > .btn--primary { flex: 2; }
+.day-picker { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.day-picker__d { position: relative; height: 46px; border-radius: 14px; background: rgba(255,255,255,.07); font-weight: 600; font-size: var(--fs-subhead); color: var(--c-text-1); display: grid; place-items: center; }
+.day-picker__d.is-on { background: #fff; color: #000; }
+.day-picker__d i { position: absolute; bottom: 6px; width: 4px; height: 4px; border-radius: 50%; background: #30d158; }
+.move-note { font-size: var(--fs-footnote); color: var(--c-text-2); line-height: 1.35; display: flex; flex-direction: column; gap: 4px; min-height: 1.3em; }
+.move-note__warn { color: #ff9f0a; }
+/* ===== Liquid Glass press lens ===== */
+.lg-press { transform: translate(var(--sx, 0), var(--sy, 0)) scale(var(--lg-grow, 1.06)) !important; transition: transform .34s cubic-bezier(.2,1.45,.35,1), filter .2s !important; z-index: 6; }
+.lg-release { transition: transform .55s cubic-bezier(.2,1.8,.3,1) !important; }
+.lg-light {
+  position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 5; opacity: 0;
+  transition: opacity .25s ease-out;
+  background:
+    radial-gradient(circle at var(--px, 50%) var(--py, 50%), rgba(255,255,255,.42), rgba(255,255,255,.10) 32%, rgba(255,255,255,0) 62%),
+    linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,0) 45%);
+  box-shadow:
+    inset 0 0 0 .75px rgba(255,255,255,.55),
+    inset 1.5px 1.5px 1px -1px rgba(255,255,255,.95),
+    inset -1.5px -1.5px 1px -1px rgba(255,255,255,.45),
+    inset 3px 0 5px -3px rgba(140,190,255,.45),
+    inset -3px 0 5px -3px rgba(255,150,130,.4),
+    0 10px 28px rgba(0,0,0,.45);
+}
+.lg-press > .lg-light { opacity: 1; transition-duration: .12s; }
+.btn--primary > .lg-light { background: radial-gradient(circle at var(--px, 50%) var(--py, 50%), rgba(255,255,255,.9), rgba(255,255,255,0) 60%), linear-gradient(180deg, rgba(0,0,0,0) 55%, rgba(0,0,0,.08)); }
+/* Sheets: nearly opaque so nothing behind ever competes with sheet content */
+html:not([data-platform="android"]) .sheet { background: rgba(28,28,30,.97); }

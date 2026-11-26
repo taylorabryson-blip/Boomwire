@@ -3,6 +3,7 @@
  * Week at a glance · next session with Start · fuel for today · recovery call · actions.
  * Chat is a secondary tool ("Ask Cratos").
  */
+import { openMoveSheet } from './move-sheet.js';
 import { h } from '../../components/dom.js';
 import { icon } from '../../components/icons.js';
 import { kratosAvatar } from '../../components/brand.js';
@@ -49,7 +50,8 @@ export function mount(root) {
       const s = plan.sessions.find((x) => x.day === i);
       const date = addDays(weekStart, i);
       const cls = ['week-day', s && 'week-day--train', doneDays.has(date) && 'week-day--done', i === dow && 'week-day--today'].filter(Boolean).join(' ');
-      return h('div', { class: cls }, h('span', { class: 'week-day__dow' }, d[0]), h('span', { class: 'week-day__dot' }), h('span', { class: 'week-day__time' }, s ? fmt12(toMin(s.start)).replace(' ', '').replace(':00', '').toLowerCase() : 'rest'));
+      return h(s ? 'button' : 'div', { class: cls, ...(s ? { type: 'button', 'aria-label': `Move ${s.focus}`, onClick: () => openMoveSheet({ session: s, plan, availability: av }) } : {}) },
+        h('span', { class: 'week-day__dow' }, d[0]), h('span', { class: 'week-day__dot' }), h('span', { class: 'week-day__time' }, s ? fmt12(toMin(s.start)).replace(' ', '').replace(':00', '').toLowerCase() : 'rest'));
     }));
 
     const n = nextSession(plan, now);
@@ -75,8 +77,10 @@ export function mount(root) {
           h('div', { class: 'rounded t-headline num' }, `${when} · ${fmt12(toMin(s.start))}`)),
         h('div', { class: 't-title-2', style: { margin: '2px 0 4px' } }, s.focus),
         h('div', { class: 't-footnote c-2', style: { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: '12px' } }, s.exercises.map((e) => EXERCISE_BY_ID[e.exerciseId]?.name).filter(Boolean).join(' · ')),
-        Button({ label: n.inDays === 0 ? `Start ${s.focus}` : `Start ${s.focus} Early`, variant: n.inDays === 0 ? 'primary' : undefined, block: true, iconName: 'play',
-          onClick: async () => { const w = await startWorkout({ name: s.focus, exercises: s.exercises, planFocus: s.focus }); navigate(`#/workout?id=${w.id}`); } }))
+        h('div', { class: 'btn-row' },
+          Button({ label: n.inDays === 0 ? `Start ${s.focus}` : 'Start Early', variant: n.inDays === 0 ? 'primary' : undefined, iconName: 'play',
+            onClick: async () => { const w = await startWorkout({ name: s.focus, exercises: s.exercises, planFocus: s.focus }); navigate(`#/workout?id=${w.id}`); } }),
+          Button({ label: 'Move', iconName: 'calendar', onClick: () => openMoveSheet({ session: s, plan, availability: av }) })))
       : null;
 
     const t = totals(food);

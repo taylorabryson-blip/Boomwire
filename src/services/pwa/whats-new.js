@@ -11,6 +11,12 @@ import * as repo from '../storage/repository.js';
 import { APP_VERSION } from '../../app/version.js';
 
 export const CHANGELOG = [
+  { version: '0.8.1', items: [
+    'Liquid Glass press: buttons swell into a glass lens, bend light at the rim, and a highlight follows your finger',
+    'Move any workout: pick a new day and time, this week or every week. Moving onto a booked day swaps the two',
+    'Skip a session this week, with Undo. Cratos keeps your moves when he re-plans',
+    'Warns (never blocks) if a new time overlaps work or school',
+  ] },
   { version: '0.8.0', items: [
     'Real Liquid Glass: clear glass with light catching the edges and corners (true refraction where the browser supports it); the touch bubble is gone',
     'Smooth iOS page transitions, and swipe left/right to move between tabs',

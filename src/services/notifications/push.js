@@ -52,7 +52,7 @@ async function call(body) {
 }
 
 export async function currentReminders() {
-  const [settings, plan] = await Promise.all([repo.getSettings(), repo.get('coach', 'plan')]);
+  const [settings, plan] = await Promise.all([repo.getSettings(), import('../coach.js').then((m) => m.getPlan())]);
   return buildReminders({ ...DEFAULT_REMINDERS, ...(settings.reminders ?? {}) }, plan);
 }
 
