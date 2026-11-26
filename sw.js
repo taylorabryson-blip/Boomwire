@@ -1,29 +1,14 @@
 /**
- * Offline service worker. Caches the app shell; stale-while-revalidate.
+ * Service worker: offline app shell + push notifications.
  * User data lives in IndexedDB and is never touched here.
- * Bump CACHE on every release so clients pick up new code.
+ * Bump VERSION on every release so clients pick up new code.
  */
-const CACHE = 'hercules-shell-v0.1.0';
-const SHELL = [
-  './', './index.html', './manifest.webmanifest',
-  './assets/icons/icon-180.png', './assets/icons/icon-192.png', './assets/icons/icon-512.png',
-  './src/design-system/tokens.css', './src/design-system/base.css', './src/design-system/components.css',
-  './src/app/main.js', './src/app/version.js',
-  './src/components/dom.js', './src/components/icons.js', './src/components/primitives.js',
-  './src/components/overlays.js', './src/components/bar-chart.js',
-  './src/navigation/routes.js', './src/navigation/router.js', './src/navigation/tabbar.js',
-  './src/data/models.js',
-  './src/services/storage/db.js', './src/services/storage/repository.js', './src/services/storage/backup.js',
-  './src/services/sync/merge.js', './src/services/pwa/register-sw.js',
-  './src/engines/calculations/hydration.js',
-  './src/utils/dates.js', './src/utils/units.js', './src/utils/id.js',
-  './src/screens/shared/live.js', './src/screens/shared/hydration-ui.js',
-  './src/screens/home/home.js', './src/screens/training/training.js', './src/screens/body/body.js',
-  './src/screens/nutrition/nutrition.js', './src/screens/analytics/analytics.js', './src/screens/settings/settings.js',
-];
+const VERSION = 'v0.4.0';
+const CACHE = `hercules-shell-${VERSION}`;
+const CORE = ['./', './index.html', './manifest.webmanifest', './assets/icons/icon-192.png', './assets/icons/icon-512.png'];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(CORE)).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (e) => {
@@ -32,11 +17,42 @@ self.addEventListener('activate', (e) => {
     .then(() => self.clients.claim()));
 });
 
+// Network-first for code (so updates land immediately), cache fallback offline.
 self.addEventListener('fetch', (e) => {
-  if (e.request.method !== 'GET' || new URL(e.request.url).origin !== location.origin) return;
-  e.respondWith(caches.open(CACHE).then(async (cache) => {
-    const cached = await cache.match(e.request, { ignoreSearch: true });
-    const network = fetch(e.request).then((res) => { if (res.ok) cache.put(e.request, res.clone()); return res; }).catch(() => cached);
-    return cached || network;
+  const url = new URL(e.request.url);
+  if (e.request.method !== 'GET' || url.origin !== location.origin) return;
+  e.respondWith((async () => {
+    const cache = await caches.open(CACHE);
+    try {
+      const res = await fetch(e.request);
+      if (res.ok) cache.put(e.request, res.clone());
+      return res;
+    } catch {
+      return (await cache.match(e.request, { ignoreSearch: true })) || (await cache.match('./index.html'));
+    }
+  })());
+});
+
+self.addEventListener('push', (e) => {
+  let data = {};
+  try { data = e.data?.json() ?? {}; } catch { data = { title: 'Hercules', body: e.data?.text() ?? '' }; }
+  e.waitUntil(self.registration.showNotification(data.title || 'Hercules', {
+    body: data.body || '',
+    tag: data.tag || undefined,
+    icon: 'assets/icons/icon-192.png',
+    badge: 'assets/icons/icon-192.png',
+    data: { url: data.url || '#/home' },
   }));
+});
+
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  const target = new URL(`./${e.notification.data?.url ?? '#/home'}`, self.registration.scope).href;
+  e.waitUntil((async () => {
+    const wins = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const w of wins) {
+      if ('focus' in w) { await w.navigate?.(target).catch(() => {}); return w.focus(); }
+    }
+    return self.clients.openWindow(target);
+  })());
 });

@@ -9,7 +9,36 @@
   "background_color": "#000000",
   "theme_color": "#000000",
   "icons": [
-    { "src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    {
+      "src": "assets/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Talk to Kratos",
+      "url": "./#/kratos"
+    },
+    {
+      "name": "Start workout",
+      "url": "./#/train"
+    },
+    {
+      "name": "Log water",
+      "url": "./#/nutrition"
+    }
   ]
 }

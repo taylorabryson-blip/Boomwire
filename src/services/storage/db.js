@@ -30,6 +30,29 @@ export const MIGRATIONS = [
     make('schedules');
     for (const s of DATED_STORES) make(s, [['byDate', 'date']]);
   },
+
+  // v2 — Phases 2–4 + Kratos: templates, coach state, coach messages.
+  //       Switch the display-unit preference to US customary (oz/lb/in), as
+  //       requested. Stored values are metric and are NOT modified.
+  (db, tx) => {
+    const make = (name, indexes = []) => {
+      if (db.objectStoreNames.contains(name)) return;
+      const s = db.createObjectStore(name, { keyPath: 'id' });
+      for (const [idx, keyPath] of indexes) s.createIndex(idx, keyPath);
+      s.createIndex('byUpdatedAt', 'updatedAt');
+    };
+    make('templates');
+    make('coach');
+    make('coachMessages', [['byDate', 'date']]);
+    const settings = tx.objectStore('settings');
+    const req = settings.get('settings');
+    req.onsuccess = () => {
+      const s = req.result;
+      if (s && s.units !== 'imperial') {
+        settings.put({ ...s, units: 'imperial', updatedAt: new Date().toISOString(), rev: s.rev + 1 });
+      }
+    };
+  },
 ];
 
 export const SCHEMA_VERSION = MIGRATIONS.length;

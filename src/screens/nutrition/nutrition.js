@@ -9,6 +9,9 @@ import { dailyTotal } from '../../engines/calculations/hydration.js';
 import { HydrationCard } from '../shared/hydration-ui.js';
 import { liveScreen } from '../shared/live.js';
 import { toast } from '../../components/overlays.js';
+import { getPlan } from '../../services/coach.js';
+import { DAY_SHORT, fmt12, toMin } from '../../engines/coach/parser.js';
+import { kratosAvatar } from '../../components/brand.js';
 
 function confirmDelete(entry, settings) {
   const sheet = openSheet({ title: 'Delete Entry', content: h('div', { class: 'stack' },
@@ -23,7 +26,9 @@ function confirmDelete(entry, settings) {
 export function mount(root) {
   return liveScreen(root, async () => {
     const today = localDateKey();
-    const [settings, water] = await Promise.all([repo.getSettings(), repo.listByDate('hydrationLogs', today)]);
+    const [settings, water, plan] = await Promise.all([repo.getSettings(), repo.listByDate('hydrationLogs', today), getPlan()]);
+    const todayIdx = (new Date().getDay() + 6) % 7;
+    const meals = plan?.nutrition?.meals ?? [];
     const entries = water.sort((a, b) => b.time.localeCompare(a.time) || b.createdAt.localeCompare(a.createdAt));
     return [
       NavHeader({ title: 'Nutrition' }),
@@ -32,6 +37,9 @@ export function mount(root) {
         entries.length
           ? List(...entries.map((e) => ListRow({ title: volumeString(e.amountMl, settings.units), subtitle: e.time, trailing: Provenance(e.provenance), onClick: () => confirmDelete(e, settings), chevron: false })))
           : Card({}, EmptyState({ inline: true, title: 'No water logged today', body: 'Use the buttons above to log an entry.' }))),
+      meals.length && Section({ title: 'Fuel Timing', footer: 'From Kratos’ plan: a meal about 2 hours before training (or a light snack if that’s too early) and a protein-rich meal within about 2 hours after.' },
+        List(...meals.map((m) => ListRow({ iconNode: kratosAvatar(30), title: `${DAY_SHORT[m.day]}${m.day === todayIdx ? ' · today' : ''}`,
+          subtitle: `${m.pre.kind === 'snack' ? 'Snack' : 'Meal'} ${fmt12(toMin(m.pre.time))} · Protein meal by ${fmt12(toMin(m.post.time))}` })))),
       Section({ title: 'Food', footer: 'Nutrient values will come from verified sources such as USDA FoodData Central. User-entered foods will be labelled as such.' },
         List(
           RoadmapRow({ iconName: 'flame', title: 'Calorie & macro tracking', subtitle: 'Meals, servings, daily targets', phase: 5 }),

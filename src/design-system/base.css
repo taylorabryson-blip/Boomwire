@@ -1,7 +1,8 @@
 /* Base reset + typography utilities */
 *, *::before, *::after { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; height: 100%; background: var(--c-bg); }
+html, body { margin: 0; padding: 0; background: var(--c-bg); }
 body {
+  min-height: 100%;
   color: var(--c-text-1);
   font-family: var(--font-sans);
   font-size: var(--fs-body);
@@ -10,13 +11,25 @@ body {
   -webkit-text-size-adjust: 100%;
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior-y: none;
-  font-feature-settings: "tnum" 0, "cv11" 1;
 }
+
+/* App-like touch behaviour: no long-press link previews / callouts, no
+   accidental text selection on chrome. Text fields stay fully editable. */
+body, a, button, img, svg, [role="button"], .no-select {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+input, textarea, [contenteditable="true"], .selectable { -webkit-user-select: text; user-select: text; -webkit-touch-callout: default; }
+img, svg { -webkit-user-drag: none; }
+
 button, input, select, textarea { font: inherit; color: inherit; }
-button { background: none; border: 0; padding: 0; cursor: pointer; }
+button { background: none; border: 0; padding: 0; cursor: pointer; touch-action: manipulation; }
+input, textarea, select { font-size: max(16px, 1em); } /* ≥16px prevents iOS zoom-on-focus */
+:focus { outline: none; }
 :focus-visible { outline: 2px solid var(--c-focus); outline-offset: 2px; border-radius: var(--r-xs); }
 svg { display: block; }
-#app { min-height: 100%; }
+#app { min-height: 100vh; }
 
 .t-large-title { font-size: var(--fs-large-title); line-height: var(--lh-large-title); font-weight: var(--fw-bold); letter-spacing: -0.02em; }
 .t-title-1 { font-size: var(--fs-title-1); line-height: var(--lh-title-1); font-weight: var(--fw-bold); letter-spacing: -0.015em; }
@@ -30,4 +43,5 @@ svg { display: block; }
 .c-2 { color: var(--c-text-2); }
 .c-3 { color: var(--c-text-3); }
 .num { font-variant-numeric: tabular-nums; }
+.rounded { font-family: var(--font-rounded); }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

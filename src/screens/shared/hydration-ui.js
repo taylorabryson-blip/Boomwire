@@ -7,11 +7,14 @@ import { Card, Provenance, ProgressRing, Button, Stat } from '../../components/p
 import { openSheet, toast } from '../../components/overlays.js';
 import * as repo from '../../services/storage/repository.js';
 import { localDateKey, localTime } from '../../utils/dates.js';
-import { formatVolume, volumeString, volumeInputToMl, volumeInputUnit, flOzToMl } from '../../utils/units.js';
+import { formatVolume, volumeString, volumeInputToMl, volumeInputUnit, flOzToMl, mlToFlOz, cupsString, round } from '../../utils/units.js';
 import { goalProgress } from '../../engines/calculations/hydration.js';
 
-const PRESETS = { metric: [250, 330, 500, 750], imperial: [8, 12, 16, 24] };
-const presetMl = (v, units) => (units === 'imperial' ? Math.round(flOzToMl(v)) : v);
+// US presets: 1 cup, a can, a standard bottle, a big tumbler, a quart.
+const PRESETS = { imperial: [8, 12, 16, 24, 32], metric: [250, 330, 500, 750, 1000] };
+const PRESET_LABEL = { 8: '1 cup · 8 oz', 32: '32 oz' };
+const presetText = (amt, units) => (units === 'metric' ? `${amt} ml` : PRESET_LABEL[amt] ?? `${amt} oz`);
+const presetMl = (v, units) => (units === 'metric' ? v : Math.round(flOzToMl(v)));
 
 export async function addWater(amountMl, settings) {
   const rec = await repo.create('hydrationLogs', { date: localDateKey(), time: localTime(), amountMl, provenance: 'recorded' });
@@ -24,16 +27,17 @@ export function HydrationCard({ totalMl, entries, settings }) {
   const p = goalProgress(totalMl, goal);
   const v = formatVolume(totalMl, units);
   const presets = [PRESETS[units][0], PRESETS[units][2]];
+  const cupsNote = units === 'metric' ? '' : `${cupsString(totalMl)} · `;
   return Card({ label: 'Water', iconName: 'drop', badge: Provenance('recorded') },
     h('div', { class: 'row', style: { gap: '20px' } },
       ProgressRing({ progress: p, size: 92, stroke: 9, center: h('div', { class: 't-footnote c-2 num' }, p == null ? '—' : `${Math.round(p * 100)}%`) }),
       h('div', { style: { flex: 1, minWidth: 0 } },
         Stat({ value: v.value, unit: v.unit, large: true }),
         h('div', { class: 't-footnote c-2', style: { marginTop: '4px' } },
-          goal ? `of ${volumeString(goal, units)} goal · ${entries} ${entries === 1 ? 'entry' : 'entries'}`
-               : h('a', { href: '#/settings', style: { color: 'inherit' } }, 'Set a daily goal in Settings')))),
+          goal ? `${cupsNote}of ${volumeString(goal, units)} goal`
+               : h('span', {}, cupsNote, h('button', { type: 'button', style: { color: 'inherit', textDecoration: 'underline' }, onClick: () => openGoalSheet(settings) }, 'Set a daily goal'))))),
     h('div', { class: 'btn-row', style: { marginTop: '16px' } },
-      ...presets.map((amt) => Button({ label: `+${amt} ${volumeInputUnit(units)}`, size: 'small', onClick: () => addWater(presetMl(amt, units), settings) })),
+      ...presets.map((amt) => Button({ label: units === 'metric' ? `+${amt} ml` : amt === 8 ? '+1 cup' : `+${amt} oz`, size: 'small', onClick: () => addWater(presetMl(amt, units), settings) })),
       Button({ label: 'Custom', size: 'small', iconName: 'plus', onClick: () => openAddWaterSheet(settings) })));
 }
 
@@ -46,7 +50,7 @@ export function openAddWaterSheet(settings) {
     h('button', { class: 'chip', type: 'button', 'aria-pressed': 'false', onClick: (e) => {
       selected = amt; input.value = amt;
       chips.querySelectorAll('.chip').forEach((c) => c.setAttribute('aria-pressed', String(c === e.currentTarget)));
-    } }, `${amt} ${volumeInputUnit(units)}`)));
+    } }, presetText(amt, units))));
   input.addEventListener('input', () => { selected = null; chips.querySelectorAll('.chip').forEach((c) => c.setAttribute('aria-pressed', 'false')); });
 
   const submit = async () => {
@@ -66,8 +70,8 @@ export function openAddWaterSheet(settings) {
 
 export function openGoalSheet(settings) {
   const { units, hydrationGoalMl } = settings;
-  const current = hydrationGoalMl ? (units === 'imperial' ? Math.round(hydrationGoalMl / 29.5735295625) : hydrationGoalMl) : '';
-  const input = h('input', { type: 'number', inputmode: 'decimal', step: 'any', value: String(current), placeholder: units === 'imperial' ? '64' : '2000' });
+  const current = hydrationGoalMl ? (units === 'metric' ? hydrationGoalMl : round(mlToFlOz(hydrationGoalMl), 0)) : '';
+  const input = h('input', { type: 'number', inputmode: 'decimal', step: 'any', value: String(current), placeholder: units === 'metric' ? '2000' : '64' });
   const error = h('div', { class: 'field-error' });
   const save = async () => {
     const ml = volumeInputToMl(input.value, units);

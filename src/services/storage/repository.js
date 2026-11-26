@@ -4,7 +4,7 @@
  * so any mounted screen can re-render.
  */
 import * as db from './db.js';
-import { validate, ValidationError, DEFAULT_SETTINGS } from '../../data/models.js';
+import { validate, ValidationError, DEFAULT_SETTINGS, DEFAULT_PROFILE } from '../../data/models.js';
 import { uuid } from '../../utils/id.js';
 
 const bus = new EventTarget();
@@ -84,6 +84,27 @@ export async function updateSettings(patch) {
   if (!existing) return create('settings', { ...DEFAULT_SETTINGS, ...patch, id: 'settings' });
   return update('settings', 'settings', patch);
 }
+
+/* ---- Generic singletons (profile, coach availability/plan) ------------- */
+export async function get(store, id) {
+  const r = await db.get(store, id);
+  return alive(r) ? r : null;
+}
+
+export async function getSingleton(store, id, defaults = {}) {
+  const r = await db.get(store, id);
+  return { ...defaults, ...(alive(r) ? r : {}), id };
+}
+
+/** Create or update a singleton. Revives a tombstoned one. */
+export async function upsertSingleton(store, id, patch, defaults = {}) {
+  const existing = await db.get(store, id);
+  if (!existing) return create(store, { ...defaults, ...patch, id });
+  return update(store, id, { ...patch, deletedAt: null });
+}
+
+export const getProfile = () => getSingleton('profile', 'profile', DEFAULT_PROFILE);
+export const updateProfile = (patch) => upsertSingleton('profile', 'profile', patch, DEFAULT_PROFILE);
 
 /** Used by backup import after merge has decided winners. */
 export async function writeMerged(store, records) {

@@ -6,7 +6,7 @@ A personal fitness and physical-performance operating system, built as an
 iPhone-first Progressive Web App with an architecture ready for a future
 native SwiftUI layer.
 
-**Status: v0.1.0 — Phase 1 (Foundation) complete.**
+**Status: v0.4.0 — Phases 1–4 complete + Kratos coach + push reminders.**
 
 ## Run it
 
@@ -14,7 +14,9 @@ No build step. Plain ES modules.
 
 ```bash
 npm start          # serves on http://localhost:5173 (or use VS Code "Live Server")
-npm test           # 13 unit tests, Node 20+, zero dependencies
+npm test           # 36 unit tests, Node 20+
+npm run vendor     # copy Three.js into src/vendor (after npm i)
+npm run build:anatomy  # regenerate assets/models/muscles.glb
 ```
 
 On iPhone: open the hosted URL in Safari → Share → **Add to Home Screen**.
@@ -24,21 +26,21 @@ It then runs full-screen and works offline.
 Push to GitHub → Settings → Pages → Source: `main` / root. Hash routing
 (`#/home`) means no server rewrites are needed.
 
-## What Phase 1 delivers
+## What's in v0.4
 
 | Area | Delivered |
 |---|---|
-| Design system | Tokens (color, type scale, 4-pt spacing, radius, motion), base + component CSS |
-| Components | Header, Section, Card, List/ListRow, Button, Chips, SegmentedControl, Stat, Provenance badge, ProgressRing/Bar, EmptyState, BottomSheet, Toast, BarChart, icon set |
-| Navigation | 5-tab bar (Home, Training, Body, Nutrition, Analytics) + Settings off Home, hash router with lazy-loaded screens |
-| Storage | IndexedDB with additive-only versioned migrations; all 10 roadmap stores created up front |
-| Data integrity | Schema validation on every write, soft-delete tombstones, `updatedAt`/`rev` envelopes, deterministic merge (newer always wins) |
-| Backup | JSON export (share sheet on iOS) and merge-import that never deletes local data |
-| PWA | Manifest, icons, offline service worker, safe-area insets, persistent-storage request |
-| Working feature | Hydration logging end-to-end (log, undo, delete, goal, 7/30-day analytics) proving every layer works |
+| Navigation | Home · Train · Kratos · Nutrition · Progress (body/anatomy lives in Progress) |
+| iOS feel | Floating glass tab bar with spring indicator, Dynamic Island live activities (rest timer, workout, confirmations), collapsing large titles, card-presentation sheets with drag-to-dismiss, view transitions, haptics (iOS 18 switch trick), no long-press link previews |
+| Kratos | On-device coach: understands schedules in plain English, builds a weekly plan (days, times, splits, exercises for your gear), meal timing, motivation, lagging-area analysis, calendar export |
+| Training (Phase 3) | 61-exercise database, workout logger with previous-set column, rest timer, PRs, templates, history, Epley e1RM trend |
+| Anatomy (Phase 4) | Three.js GLB muscle model (24 muscles, 46 meshes), tap-to-select, front/back, labels, heat map: Recent · Volume · Exercises · Frequency × Today/7/30/90/All |
+| Body (Phase 2) | Profile, desired build, focus areas, environment + gear checklist, weight & measurement logging with trends |
+| Water | US units (oz + cups) by default |
+| Notifications | Web Push via Supabase edge function + pg_cron (works with the app closed once added to the Home Screen, iOS 16.4+), in-app reminders, .ics calendar fallback |
 
-Unbuilt modules show their planned contents and phase. They do not show
-fake numbers.
+The 3D figure is a simplified procedural model; any GLB with meshes named
+`muscle__<id>__<side>` can replace it without code changes.
 
 ## Layout
 

@@ -5,7 +5,7 @@ import { validate, SCHEMAS } from '../src/data/models.js';
 import { mergeRecords, compareVersions } from '../src/services/sync/merge.js';
 import { dailyTotal, dailyTotals, loggedDayAverage, goalProgress, daysMeetingGoal } from '../src/engines/calculations/hydration.js';
 import { addDays, lastNDays, isDateKey } from '../src/utils/dates.js';
-import { formatVolume, volumeInputToMl, mlToFlOz, kgToLb, round } from '../src/utils/units.js';
+import { formatVolume, volumeInputToMl, mlToFlOz, flOzToMl, kgToLb, round, cupsString, weightInputToKg, weightValue } from '../src/utils/units.js';
 
 const env = (o = {}) => ({ id: 'a', createdAt: '2026-11-25T10:00:00.000Z', updatedAt: '2026-11-25T10:00:00.000Z', deletedAt: null, rev: 1, ...o });
 const log = (date, amountMl, o = {}) => env({ id: `${date}-${amountMl}-${Math.random()}`, date, time: '09:00', amountMl, provenance: 'recorded', ...o });
@@ -77,7 +77,14 @@ test('units: exact conversion constants and formatting', () => {
   assert.equal(round(mlToFlOz(29.5735295625), 6), 1);
   assert.equal(round(kgToLb(0.45359237), 6), 1);
   assert.equal(volumeInputToMl(8, 'imperial'), 237);
-  assert.deepEqual(formatVolume(750), { value: '750', unit: 'ml' });
-  assert.deepEqual(formatVolume(1500), { value: '1.5', unit: 'L' });
+  assert.deepEqual(formatVolume(750, 'metric'), { value: '750', unit: 'ml' });
+  assert.deepEqual(formatVolume(1500, 'metric'), { value: '1.5', unit: 'L' });
+  assert.deepEqual(formatVolume(flOzToMl(8)), { value: '8', unit: 'oz' }); // US is the default
   assert.deepEqual(formatVolume(null), { value: '—', unit: '' });
+});
+
+test('units: cups and lossless weight round-trip', () => {
+  assert.equal(cupsString(flOzToMl(40)), '5 cups');
+  assert.equal(cupsString(flOzToMl(12)), '1½ cups');
+  assert.equal(weightValue(weightInputToKg(135, 'imperial'), 'imperial'), 135);
 });
