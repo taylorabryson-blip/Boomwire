@@ -18,6 +18,8 @@
   <link rel="stylesheet" href="src/design-system/tokens.css">
   <link rel="stylesheet" href="src/design-system/base.css">
   <link rel="stylesheet" href="src/design-system/components.css">
+  <link rel="stylesheet" href="src/design-system/android.css">
+  <script>if (/Android/i.test(navigator.userAgent)) document.documentElement.dataset.platform = "android"; else document.documentElement.dataset.platform = "ios";</script>
   <script type="importmap">
     { "imports": {
         "three": "./src/vendor/three/three.module.min.js",

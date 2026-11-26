@@ -139,7 +139,7 @@ export function respond(text, ctx = {}) {
     replies.push(planReply(plan, seed));
   }
   if (p.intents.has('today')) replies.push(todayReply(current ?? planWeek({ availability: av, profile, today: now }), ctx.workouts ?? [], now));
-  if (p.intents.has('nutrition')) replies.push(nutritionReply(current ?? planWeek({ availability: av, profile, today: now }), profile, now));
+  if (p.intents.has('nutrition')) replies.push(nutritionReply(current ?? planWeek({ availability: av, profile, today: now }), profile, now, ctx));
   if (p.intents.has('focus')) replies.push(focusReply(ctx.workouts ?? [], now));
   if (p.intents.has('motivate')) replies.push({ text: pick(LINES.hype, seed) + (current ? `\n\n${nextSessionLine(current, now)}` : '') });
   if (p.intents.has('rest')) replies.push({ text: pick(LINES.rest, seed) });
@@ -196,7 +196,7 @@ function todayReply(plan, workouts, now) {
   };
 }
 
-function nutritionReply(plan, profile, now) {
+function nutritionReply(plan, profile, now, ctx = {}) {
   const dev = isDeveloping(profile, now);
   const n = plan.nutrition;
   const sd = typeof n.startDate === 'string' && isDateKey(n.startDate) ? parseDateKey(n.startDate) : n.startDate instanceof Date ? n.startDate : null;
@@ -210,7 +210,9 @@ function nutritionReply(plan, profile, now) {
     lines.push('Then: protein at every meal, a meal before training, a protein meal after.');
   }
   if (timing.length) lines.push(`Fuel around your sessions:\n${timing.join('\n')}`);
-  lines.push('Calorie and macro targets come once the Nutrition module is built. I’m not guessing numbers for you.');
+  const t = ctx.targets;
+  if (t && !t.missing) lines.push(`Your targets: ${t.kcal} kcal · ${t.protein} g protein · ${t.carbs} g carbs · ${t.fat} g fat${t.source === 'auto' ? ' (estimated from your profile — adjust in Nutrition → Targets)' : ''}.`);
+  else lines.push('Set your targets in Nutrition → Targets (I need your weight, height, age and activity) and I’ll give you numbers.');
   return { text: lines.join('\n\n') };
 }
 

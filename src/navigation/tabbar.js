@@ -21,7 +21,15 @@ export function createTabBar() {
     el,
     setActive(id) {
       for (const [k, b] of items) {
-        if (k === id) { b.setAttribute('aria-current', 'page'); indicator.style.transform = `translateX(${Number(b.dataset.index) * 100}%)`; }
+        if (k === id) {
+          b.setAttribute('aria-current', 'page');
+          const next = `translateX(${Number(b.dataset.index) * 100}%)`;
+          if (indicator.style.transform && indicator.style.transform !== next) {
+            indicator.style.setProperty('--from', indicator.style.transform);
+            indicator.classList.remove('is-moving'); void indicator.offsetWidth; indicator.classList.add('is-moving');
+          }
+          indicator.style.transform = next;
+        }
         else b.removeAttribute('aria-current');
       }
     },

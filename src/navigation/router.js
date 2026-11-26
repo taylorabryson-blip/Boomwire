@@ -19,7 +19,7 @@ export function startRouter(view, tabbar, topbar) {
     const root = h('div', { class: 'screen' });
     view.replaceChildren(root);
     window.scrollTo(0, 0);
-    cleanup = (await mod.mount(root, { params })) ?? null;
+    cleanup = (await mod[route.fn ?? 'mount'](root, { params })) ?? null;
     wireTopbar(root);
   }
 
@@ -29,7 +29,7 @@ export function startRouter(view, tabbar, topbar) {
     topbar.set(header?.dataset.navTitle ?? '', header?.dataset.navBack ?? null);
     const title = header?.querySelector('.nav-header__title');
     if (!title) { topbar.show(false); return; }
-    io = new IntersectionObserver(([e]) => topbar.show(!e.isIntersecting), { rootMargin: `-${44 + (parseInt(getComputedStyle(document.documentElement).getPropertyValue('--safe-top')) || 0)}px 0px 0px 0px` });
+    io = new IntersectionObserver(([e]) => topbar.show(!e.isIntersecting && window.scrollY > 4), { rootMargin: `-${44 + (parseInt(getComputedStyle(document.documentElement).getPropertyValue('--safe-top')) || 0)}px 0px 0px 0px` });
     io.observe(title);
   }
 

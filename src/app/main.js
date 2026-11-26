@@ -6,6 +6,8 @@ import { startRouter, createTopbar } from '../navigation/router.js';
 import { registerServiceWorker } from '../services/pwa/register-sw.js';
 import { startWorkoutActivity } from '../screens/training/live-activity.js';
 import { startReminderClock } from '../services/notifications/local.js';
+import { installTouchEffects } from '../components/touch-effects.js';
+import { announceUpdate } from '../services/pwa/whats-new.js';
 
 // No long-press context menus / link previews anywhere except text fields.
 document.addEventListener('contextmenu', (e) => {
@@ -29,7 +31,9 @@ async function boot() {
   registerServiceWorker();
   startWorkoutActivity();
   startReminderClock();
+  installTouchEffects();
   window.__herculesBooted = true;
+  announceUpdate();
 }
 
 boot().catch((e) => { window.__herculesBootError?.(e); });

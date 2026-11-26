@@ -1,6 +1,6 @@
 /** Body measurements: log sheet + full history with per-metric chart. */
 import { h } from '../../components/dom.js';
-import { NavHeader, Section, Card, List, ListRow, FieldRow, Button, EmptyState, SegmentedControl, Provenance } from '../../components/primitives.js';
+import { NavHeader, IconButton, Section, Card, List, ListRow, FieldRow, Button, EmptyState, SegmentedControl, Provenance } from '../../components/primitives.js';
 import { LineChart } from '../../components/line-chart.js';
 import { openSheet, confirmSheet, toast } from '../../components/overlays.js';
 import * as repo from '../../services/storage/repository.js';
@@ -60,17 +60,22 @@ export function mount(root) {
     }));
     const opts = [{ value: 'weightKg', label: 'Weight' }, ...MEASUREMENTS.slice(0, 3).map((k) => ({ value: k, label: MEASURE_LABELS[k] }))];
     return [
-      NavHeader({ title: 'Measurements', back: { href: '#/progress', label: 'Progress' }, trailing: h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Log', onClick: () => openLogWeightSheet(settings) }, '+') }),
+      NavHeader({ title: 'Measurements', back: { href: '#/progress', label: 'Progress' }, trailing: IconButton({ iconName: 'plus', label: 'Log measurement', onClick: () => openLogWeightSheet(settings) }) }),
       Section({ first: true, action: Provenance('recorded') },
         h('div', { class: 'chips chips--scroll' }, [{ value: 'weightKg', label: 'Weight' }, ...MEASUREMENTS.map((k) => ({ value: k, label: MEASURE_LABELS[k] }))].map((o) =>
           h('button', { class: 'chip', type: 'button', 'aria-pressed': String(metric === o.value), onClick: () => { metric = o.value; refresh(); } }, o.label))),
         h('div', { style: { marginTop: '12px' } }, Card({}, pts.length ? LineChart({ points: pts, format: (v) => `${v} ${metric === 'weightKg' ? weightUnit(u) : lengthUnit(u)}` }) : EmptyState({ inline: true, title: 'No data for this measurement yet' })))),
-      Section({ title: 'Entries' },
-        sorted.length ? List(...[...sorted].reverse().map((m) => ListRow({
+      (() => {
+        if (!sorted.length) return Card({}, EmptyState({ iconName: 'ruler', title: 'No entries yet', body: 'Tap + to log your first weigh-in.', action: Button({ label: 'Log Now', variant: 'primary', onClick: () => openLogWeightSheet(settings) }) }));
+        const row = (m, after) => ListRow({
           title: formatRelativeDay(m.date),
           subtitle: [m.weightKg != null && weightString(m.weightKg, u), ...MEASUREMENTS.filter((k) => m[k] != null).map((k) => `${MEASURE_LABELS[k]} ${lengthString(m[k], u)}`)].filter(Boolean).join(' · '),
-          onClick: () => openLogWeightSheet(settings, m),
-        }))) : Card({}, EmptyState({ iconName: 'ruler', title: 'No entries yet', body: 'Tap + to log your first weigh-in.', action: Button({ label: 'Log Now', variant: 'primary', onClick: () => openLogWeightSheet(settings) }) }))),
+          onClick: () => { after?.(); openLogWeightSheet(settings, m); },
+        });
+        const recent = [...sorted].reverse();
+        return List(...recent.slice(0, 3).map((m) => row(m)),
+          recent.length > 3 && ListRow({ iconName: 'list', title: 'All Entries', value: String(recent.length), onClick: () => { const { close } = openSheet({ title: 'All Entries', content: List(...recent.map((m) => row(m, () => close()))) }); } }));
+      })(),
     ];
     void opts;
   });

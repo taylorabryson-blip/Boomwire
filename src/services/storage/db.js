@@ -53,6 +53,29 @@ export const MIGRATIONS = [
       }
     };
   },
+
+  // v3 — Phase 5 (saved meals) + full gear catalog. Old gear ids are mapped to
+  //      their new equivalents so nobody loses their selection.
+  (db, tx) => {
+    if (!db.objectStoreNames.contains('savedMeals')) {
+      const s = db.createObjectStore('savedMeals', { keyPath: 'id' });
+      s.createIndex('byUpdatedAt', 'updatedAt');
+    }
+    const MAP = {
+      dumbbell: ['dumbbells'], barbell: ['barbell', 'plates'], rack: ['power_rack'], bench: ['flat_bench', 'adjustable_bench'],
+      pullup_bar: ['pullup_bar'], dip_bars: ['dip_station'], cable: ['cable_station', 'lat_pulldown', 'seated_row'],
+      machine: ['chest_press_machine', 'pec_deck', 'shoulder_press_machine', 'leg_press', 'hack_squat', 'leg_extension', 'leg_curl', 'abductor_machine', 'calf_machine', 'assisted_pullup', 'ab_machine'],
+      kettlebell: ['kettlebells'], band: ['resistance_bands'],
+    };
+    const profiles = tx.objectStore('profile');
+    const req = profiles.get('profile');
+    req.onsuccess = () => {
+      const p = req.result;
+      if (!p || !Array.isArray(p.gear)) return;
+      const gear = [...new Set(p.gear.flatMap((g) => MAP[g] ?? [g]))];
+      profiles.put({ ...p, gear, updatedAt: new Date().toISOString(), rev: p.rev + 1 });
+    };
+  },
 ];
 
 export const SCHEMA_VERSION = MIGRATIONS.length;

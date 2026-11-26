@@ -14,7 +14,10 @@ import { isDateKey } from '../utils/dates.js';
 import { GEAR, ENVIRONMENTS, STYLES, FOCUS_AREAS } from './exercises/gear.js';
 
 export const PROVENANCE = ['recorded', 'measured', 'estimated'];
-export const GOALS = ['maintain', 'muscle', 'consistency', 'performance'];
+export const GOALS = ['maintain', 'muscle', 'fat_loss', 'consistency', 'performance'];
+export const ACTIVITY = ['sedentary', 'light', 'moderate', 'very', 'extra'];
+export const MEALS = ['breakfast', 'lunch', 'dinner', 'snacks'];
+export const NUTRIENT_KEYS = ['kcal', 'protein', 'carbs', 'fat', 'fiber', 'sugars', 'sodium', 'satfat'];
 export const EXPERIENCE = ['beginner', 'intermediate', 'advanced'];
 export const MEASUREMENTS = ['chestCm', 'waistCm', 'armsCm', 'thighsCm', 'calvesCm', 'shouldersCm'];
 
@@ -36,6 +39,9 @@ export const SCHEMAS = {
       units: { type: 'enum', values: ['imperial', 'metric'], required: true },
       hydrationGoalMl: num(250, 10000),
       reminders: { type: 'object', nullable: true },
+      nutritionTargets: { type: 'object', nullable: true },
+      macroDisplay: { type: 'enum', values: ['grams', 'percent'], nullable: true },
+      lastSeenVersion: { type: 'text', nullable: true },
     },
   },
   hydrationLogs: {
@@ -58,6 +64,7 @@ export const SCHEMAS = {
       goal: { type: 'enum', values: GOALS, nullable: true },
       trainingDaysTarget: { type: 'int', nullable: true, min: 1, max: 7 },
       sessionMinutes: { type: 'int', nullable: true, min: 15, max: 180 },
+      activityLevel: { type: 'enum', values: ACTIVITY, nullable: true },
       environment: { type: 'enum', values: ENVIRONMENTS.map((e) => e.id), nullable: true },
       gear: { type: 'enumArray', values: GEAR.map((g) => g.id), nullable: true },
       style: { type: 'enum', values: STYLES.map((x) => x.id), nullable: true },
@@ -96,9 +103,61 @@ export const SCHEMAS = {
     custom: (r) => validateExercises(r.exercises, false),
   },
   exercises: { phase: 3, fields: {} },
-  foods: { phase: 5, fields: {} },
-  foodLogs: { phase: 5, fields: { date: { type: 'date', required: true } } },
-  recoveryLogs: { phase: 7, fields: { date: { type: 'date', required: true } } },
+  foods: {
+    phase: 5,
+    fields: {
+      name: { type: 'text', required: true, max: 200 },
+      brand: { type: 'text', nullable: true, max: 80 },
+      source: { type: 'enum', values: ['usda', 'off', 'custom'], required: true },
+      sourceId: { type: 'text', nullable: true },
+      verification: { type: 'enum', values: ['verified', 'community', 'user'], required: true },
+      basisLabel: { type: 'text', required: true, max: 60 },
+      basisGrams: num(0.1, 5000),
+      saved: { type: 'boolean', nullable: true },
+    },
+    custom: (r) => validateNutrients(r.nutrients) .concat(validatePortions(r.portions)),
+  },
+  foodLogs: {
+    phase: 5,
+    fields: {
+      date: { type: 'date', required: true },
+      time: TIME,
+      meal: { type: 'enum', values: MEALS, required: true },
+      name: { type: 'text', required: true, max: 200 },
+      brand: { type: 'text', nullable: true, max: 80 },
+      source: { type: 'enum', values: ['usda', 'off', 'custom'], required: true },
+      sourceId: { type: 'text', nullable: true },
+      verification: { type: 'enum', values: ['verified', 'community', 'user'], required: true },
+      basisLabel: { type: 'text', required: true, max: 60 },
+      basisGrams: num(0.1, 5000),
+      servings: { type: 'number', required: true, min: 0.01, max: 100 },
+      portionLabel: { type: 'text', nullable: true, max: 60 },
+      portionGrams: num(0.1, 5000),
+      quantity: num(0.01, 100),
+      provenance: { type: 'enum', values: PROVENANCE, required: true },
+    },
+    custom: (r) => validateNutrients(r.nutrients),
+  },
+  savedMeals: {
+    phase: 5,
+    fields: { name: { type: 'text', required: true, max: 60 } },
+    custom: (r) => (!Array.isArray(r.items) || !r.items.length ? ['a saved meal needs at least one item'] : r.items.flatMap((it, i) => validateNutrients(it.nutrients).map((e) => `items[${i}].${e}`))),
+  },
+  recoveryLogs: {
+    phase: 7,
+    fields: {
+      date: { type: 'date', required: true },
+      sleepHours: num(0, 24),
+      sleepQuality: { type: 'int', nullable: true, min: 1, max: 5 },
+      soreness: { type: 'int', nullable: true, min: 1, max: 5 },
+      energy: { type: 'int', nullable: true, min: 1, max: 5 },
+      stress: { type: 'int', nullable: true, min: 1, max: 5 },
+      steps: { type: 'int', nullable: true, min: 0, max: 200000 },
+      restDay: { type: 'boolean', nullable: true },
+      notes: { type: 'text', nullable: true, max: 500 },
+      provenance: { type: 'enum', values: PROVENANCE, required: true },
+    },
+  },
   schedules: { phase: 7, fields: {} },
   coach: {
     phase: 4,
@@ -146,6 +205,7 @@ function checkField(name, rule, value, errors) {
     case 'date': if (!isDateKey(value)) errors.push(`${name} must be a valid YYYY-MM-DD date`); break;
     case 'time': if (!isTime(value)) errors.push(`${name} must be HH:MM`); break;
     case 'enum': if (!rule.values.includes(value)) errors.push(`${name} must be one of ${rule.values.join(', ')}`); break;
+    case 'boolean': if (typeof value !== 'boolean') errors.push(`${name} must be true/false`); break;
     case 'object': if (typeof value !== 'object' || Array.isArray(value)) errors.push(`${name} must be an object`); break;
     case 'enumArray':
       if (!Array.isArray(value) || value.some((v) => !rule.values.includes(v))) errors.push(`${name} must be a list of ${rule.values.join(', ')}`);
@@ -166,6 +226,20 @@ const SET_RULES = {
   weightKg: { type: 'number', nullable: true, min: 0, max: 1000 },
   durationSec: { type: 'int', nullable: true, min: 0, max: 86400 },
 };
+
+export function validateNutrients(n) {
+  if (!n || typeof n !== 'object') return ['nutrients are required'];
+  const errors = [];
+  for (const k of ['kcal', 'protein', 'carbs', 'fat']) if (typeof n[k] !== 'number' || !Number.isFinite(n[k]) || n[k] < 0) errors.push(`nutrients.${k} must be a number ≥ 0`);
+  for (const k of ['fiber', 'sugars', 'sodium', 'satfat']) if (n[k] != null && (typeof n[k] !== 'number' || n[k] < 0)) errors.push(`nutrients.${k} must be ≥ 0`);
+  if (n.kcal > 20000) errors.push('nutrients.kcal is unrealistic');
+  return errors;
+}
+function validatePortions(p) {
+  if (p == null) return [];
+  if (!Array.isArray(p)) return ['portions must be a list'];
+  return p.some((x) => !Array.isArray(x) || typeof x[0] !== 'string' || !(x[1] > 0)) ? ['portions must be [label, grams] pairs'] : [];
+}
 
 /** Workouts: sets carry actual values. Templates: sets carry targets. */
 function validateExercises(list, isWorkout) {
@@ -241,10 +315,10 @@ export class ValidationError extends Error {
   }
 }
 
-export const DEFAULT_SETTINGS = Object.freeze({ units: 'imperial', hydrationGoalMl: null, reminders: null });
+export const DEFAULT_SETTINGS = Object.freeze({ units: 'imperial', hydrationGoalMl: null, reminders: null, nutritionTargets: null, macroDisplay: 'grams', lastSeenVersion: null });
 export const DEFAULT_PROFILE = Object.freeze({
   displayName: null, birthYear: null, sex: null, heightCm: null, experience: null, goal: null,
-  trainingDaysTarget: null, sessionMinutes: null, environment: null, gear: null, style: null, focusAreas: null,
+  trainingDaysTarget: null, sessionMinutes: null, activityLevel: null, environment: null, gear: null, style: null, focusAreas: null,
 });
 
 /** Approximate age from birth year (±1 year). null when unknown. */

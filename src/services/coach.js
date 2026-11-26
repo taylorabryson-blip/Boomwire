@@ -6,6 +6,7 @@ import * as repo from './storage/repository.js';
 import { respond, GREETING } from '../engines/coach/kratos.js';
 import { planWeek, DEFAULT_AVAILABILITY } from '../engines/coach/planner.js';
 import { localDateKey } from '../utils/dates.js';
+import { activeTargets } from './nutrition/log.js';
 
 const serializePlan = (plan) => ({
   ...plan,
@@ -25,6 +26,7 @@ export async function savePlan(plan) {
 /** Rebuild the plan from current availability + profile (e.g. after profile edits). */
 export async function regeneratePlan() {
   const [av, profile] = await Promise.all([getAvailability(), repo.getProfile()]);
+  if (!av && !(await getPlan())) return null; // nothing set up yet: the wizard builds the first plan
   const plan = planWeek({ availability: av ?? DEFAULT_AVAILABILITY, profile, today: new Date() });
   return savePlan(plan);
 }
@@ -45,8 +47,8 @@ export async function ensureGreeting() {
 /** Send a user message; persists the reply and any schedule/plan changes. */
 export async function sendToKratos(text) {
   await addMessage('user', text);
-  const [availability, plan, profile, workouts] = await Promise.all([getAvailability(), getPlan(), repo.getProfile(), repo.list('workouts')]);
-  const out = respond(text, { availability, plan, profile, workouts, now: new Date() });
+  const [availability, plan, profile, workouts, targets] = await Promise.all([getAvailability(), getPlan(), repo.getProfile(), repo.list('workouts'), activeTargets()]);
+  const out = respond(text, { availability, plan, profile, workouts, targets, now: new Date() });
   if (out.availability) await saveAvailability(out.availability);
   if (out.plan) await savePlan(out.plan);
   let i = 0;

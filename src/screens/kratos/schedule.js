@@ -1,7 +1,7 @@
 /** My Schedule — the structured editor behind Kratos' plan. */
 import { h } from '../../components/dom.js';
-import { NavHeader, Section, List, FieldRow, ListRow, SegmentedControl, Stepper, Button, Card, EmptyState } from '../../components/primitives.js';
-import { openSheet, toast } from '../../components/overlays.js';
+import { NavHeader, Section, List, FieldRow, ListRow, SegmentedControl, Stepper, Button, Card, EmptyState, TimeField } from '../../components/primitives.js';
+import { confirmSheet, openSheet, toast } from '../../components/overlays.js';
 import * as repo from '../../services/storage/repository.js';
 import { getAvailability, saveAvailability, savePlan } from '../../services/coach.js';
 import { DEFAULT_AVAILABILITY, planWeek } from '../../engines/coach/planner.js';
@@ -17,7 +17,7 @@ async function save(av) {
 }
 
 function timeInput(value, onChange) {
-  return h('input', { type: 'time', value, onChange: (e) => e.target.value && onChange(e.target.value) });
+  return TimeField({ value, onChange });
 }
 
 export function mount(root) {
@@ -31,37 +31,33 @@ export function mount(root) {
 
     return [
       NavHeader({ title: 'My Schedule', back: { href: '#/kratos', label: 'Kratos' } }),
-      Section({ first: true, title: 'Day', footer: 'Kratos keeps 30 minutes after waking and 90 before bed free, plus 30 minutes around every commitment.' },
+      List(
+        FieldRow({ title: 'Wake up', iconName: 'sunrise', control: timeInput(av.wakeTime, (v) => set({ wakeTime: v })) }),
+        FieldRow({ title: 'Bedtime', iconName: 'moon', control: timeInput(av.sleepTime, (v) => set({ sleepTime: v })) })),
+      List(
+        FieldRow({ title: 'Days per week', control: Stepper({ value: av.daysPerWeek ?? 3, min: 1, max: 6, onChange: (v) => set({ daysPerWeek: v }) }) }),
+        FieldRow({ title: 'Session length', control: Stepper({ value: av.sessionMinutes ?? 60, min: 20, max: 120, step: 5, format: (v) => `${v}m`, onChange: (v) => set({ sessionMinutes: v }) }) })),
+      SegmentedControl({ label: 'Preferred time', value: av.preference, onChange: (v) => set({ preference: v }),
+        options: [{ value: 'morning', label: 'Morning' }, { value: 'midday', label: 'Midday' }, { value: 'evening', label: 'Evening' }, { value: 'any', label: 'Any' }] }),
+      h('div', {},
         List(
-          FieldRow({ title: 'Wake up', iconName: 'clock', control: timeInput(av.wakeTime, (v) => set({ wakeTime: v })) }),
-          FieldRow({ title: 'Bedtime', iconName: 'clock', control: timeInput(av.sleepTime, (v) => set({ sleepTime: v })) }))),
-      Section({ title: 'Training' },
-        List(
-          FieldRow({ title: 'Days per week', control: Stepper({ value: av.daysPerWeek ?? 3, min: 1, max: 6, onChange: (v) => set({ daysPerWeek: v }) }) }),
-          FieldRow({ title: 'Session length', control: Stepper({ value: av.sessionMinutes ?? 60, min: 20, max: 120, step: 5, format: (v) => `${v}m`, onChange: (v) => set({ sessionMinutes: v }) }) })),
-        h('div', { style: { marginTop: '12px' } },
-          SegmentedControl({ label: 'Preferred time', value: av.preference, onChange: (v) => set({ preference: v }),
-            options: [{ value: 'morning', label: 'Morning' }, { value: 'midday', label: 'Midday' }, { value: 'evening', label: 'Evening' }, { value: 'any', label: 'Any' }] }))),
-      Section({ title: 'Commitments', footer: 'Work, school, practice — anything you can’t train during. You can also just text Kratos.' },
-        groups.size
-          ? List(...[...groups.values()].map((g) => ListRow({
-              title: `${g.label} · ${dayList(g.idx.map((i) => av.busy[i].day))}`,
-              subtitle: fmtRange(toMin(g.start), toMin(g.end)),
-              onClick: async () => { const busy = av.busy.filter((_, i) => !g.idx.includes(i)); await set({ busy }); toast('Removed', { iconName: 'trash' }); },
-              trailing: h('span', { class: 't-footnote c-3' }, 'Remove'), chevron: false })))
-          : Card({}, EmptyState({ inline: true, title: 'No commitments yet', body: 'Add your work or school hours so Kratos plans around them.' })),
-        h('div', { style: { marginTop: '12px' } }, Button({ label: 'Add Commitment', iconName: 'plus', block: true, onClick: () => addBlockSheet(av) }))),
-      plan?.sessions?.length && Section({ title: 'Resulting Plan' }, PlanCard(plan, { compact: true })),
+          ...[...groups.values()].map((g) => ListRow({
+            iconName: 'calendar',
+            title: `${g.label} · ${dayList(g.idx.map((i) => av.busy[i].day))}`,
+            subtitle: fmtRange(toMin(g.start), toMin(g.end)),
+            onClick: async () => { if (!(await confirmSheet({ title: `Remove ${g.label}?`, message: 'Kratos will re-plan your week without it.', confirmLabel: 'Remove' }))) return; const busy = av.busy.filter((_, i) => !g.idx.includes(i)); await set({ busy }); toast('Removed', { iconName: 'trash' }); },
+            trailing: h('span', { class: 't-footnote c-3' }, 'Remove'), chevron: false })),
+          ListRow({ iconName: 'plus', title: 'Add Commitment', subtitle: groups.size ? null : 'Work, school, practice — anything fixed', onClick: () => addBlockSheet(av) }))),
     ];
   });
 }
 
 const dayList = (days) => {
   const d = [...new Set(days)].sort();
-  if (d.join() === '0,1,2,3,4') return 'Mon–Fri';
-  if (d.join() === '5,6') return 'Weekends';
   if (d.length === 7) return 'Every day';
-  return d.map((x) => DAY_SHORT[x]).join(', ');
+  if (d.join() === '5,6') return 'Weekends';
+  const runs = []; for (const x of d) { const r = runs[runs.length - 1]; if (r && x === r[1] + 1) r[1] = x; else runs.push([x, x]); }
+  return runs.map(([a, b]) => (a === b ? DAY_SHORT[a] : b === a + 1 ? `${DAY_SHORT[a]}, ${DAY_SHORT[b]}` : `${DAY_SHORT[a]}–${DAY_SHORT[b]}`)).join(', ');
 };
 
 function addBlockSheet(av) {
@@ -77,8 +73,8 @@ function addBlockSheet(av) {
       SegmentedControl({ label: 'Type', value: label, onChange: (v) => { label = v; }, options: ['Work', 'School', 'Practice', 'Busy'].map((x) => ({ value: x, label: x })) }),
       dayChips,
       List(
-        FieldRow({ title: 'Starts', control: h('input', { type: 'time', value: start, onChange: (e) => { start = e.target.value; } }) }),
-        FieldRow({ title: 'Ends', control: h('input', { type: 'time', value: end, onChange: (e) => { end = e.target.value; } }) })),
+        FieldRow({ title: 'Starts', control: TimeField({ value: start, onChange: (v) => { start = v; } }) }),
+        FieldRow({ title: 'Ends', control: TimeField({ value: end, onChange: (v) => { end = v; } }) })),
       err,
       Button({ label: 'Add', variant: 'primary', block: true, onClick: async () => {
         if (!days.size) { err.textContent = 'Pick at least one day.'; return; }

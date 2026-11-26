@@ -1,0 +1,70 @@
+/* ==========================================================================
+   Android: Material 3 adaptation. Applied when html[data-platform="android"].
+   Same layout and data; Android-native shapes, type, navigation and ripples.
+   ========================================================================== */
+html[data-platform="android"] {
+  --font-sans: Roboto, "Google Sans", "Inter", system-ui, sans-serif;
+  --font-rounded: "Google Sans", Roboto, "Inter", system-ui, sans-serif;
+  --c-bg: #121212;
+  --c-surface-1: #1e1e21;
+  --c-surface-2: #2a2a2e;
+  --c-surface-3: #36363b;
+  --c-separator: rgba(255,255,255,.06);
+  --r-lg: 16px; --r-md: 12px;
+  --tabbar-h: 80px;
+  --tabbar-gap: 0px;
+  --m3-primary: #e6e1e5;
+  --m3-indicator: #4a4458;
+}
+html[data-platform="android"] body { background: var(--c-bg); letter-spacing: .01em; }
+html[data-platform="android"] .t-large-title { font-size: 32px; font-weight: 500; letter-spacing: 0; }
+html[data-platform="android"] .section__title { font-weight: 500; }
+html[data-platform="android"] .card, html[data-platform="android"] .list, html[data-platform="android"] .tile, html[data-platform="android"] .nav-tile { border: 0; box-shadow: none; }
+html[data-platform="android"] .card--glass { background: var(--c-surface-2); }
+/* Navigation bar (M3) */
+html[data-platform="android"] .tabbar { bottom: 0; }
+html[data-platform="android"] .tabbar__inner { width: 100%; max-width: none; border-radius: 0; height: calc(80px + var(--safe-bottom)); padding: 12px 0 calc(16px + var(--safe-bottom)); background: #1d1b20; -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: none; border: 0; }
+html[data-platform="android"] .tabbar__indicator { display: none; }
+html[data-platform="android"] .tabbar__item { gap: 4px; font-size: 12px; font-weight: 500; color: #cac4d0; }
+html[data-platform="android"] .tabbar__item > svg { width: 64px; height: 32px; padding: 4px 20px; border-radius: 16px; transition: background 200ms; }
+html[data-platform="android"] .tabbar__item[aria-current="page"] { color: #e6e1e5; }
+html[data-platform="android"] .tabbar__item[aria-current="page"] > svg { background: var(--m3-indicator); }
+/* Top app bar */
+html[data-platform="android"] .topbar { background: #1d1b20; -webkit-backdrop-filter: none; backdrop-filter: none; border: 0; grid-template-columns: auto 1fr auto; }
+html[data-platform="android"] .topbar__title { justify-self: start; font-size: 22px; font-weight: 400; padding-left: 8px; }
+/* Buttons: M3 filled / tonal, 20px radius */
+html[data-platform="android"] .btn { border-radius: 20px; height: 44px; font-weight: 500; letter-spacing: .01em; }
+html[data-platform="android"] .btn--primary { background: var(--m3-primary); color: #1d1b20; }
+html[data-platform="android"] .btn:not(.btn--primary) { background: #332d41; color: #e8def8; }
+html[data-platform="android"] .chip { border-radius: 8px; height: 32px; background: transparent; border: 1px solid #938f99; }
+html[data-platform="android"] .chip[aria-pressed="true"] { background: #4a4458; color: #e8def8; border-color: transparent; }
+/* Segmented buttons (M3 outlined) */
+html[data-platform="android"] .segmented { background: transparent; border: 1px solid #938f99; border-radius: 20px; padding: 0; gap: 0; }
+html[data-platform="android"] .segmented__thumb { display: none; }
+html[data-platform="android"] .segmented__item { border-radius: 0; height: 40px; color: #e6e1e5; font-weight: 500; }
+html[data-platform="android"] .segmented__item + .segmented__item { border-left: 1px solid #938f99; }
+html[data-platform="android"] .segmented__item[aria-checked="true"] { background: #4a4458; color: #e8def8; }
+html[data-platform="android"] .segmented__item:first-of-type { border-radius: 20px 0 0 20px; }
+html[data-platform="android"] .segmented__item:last-of-type { border-radius: 0 20px 20px 0; }
+/* Switch (M3) */
+html[data-platform="android"] .switch { width: 52px; height: 32px; }
+html[data-platform="android"] .switch__track { background: #36343b; border: 2px solid #938f99; }
+html[data-platform="android"] .switch__knob { width: 16px; height: 16px; top: 8px; left: 8px; background: #938f99; box-shadow: none; }
+html[data-platform="android"] .switch input:checked ~ .switch__track { background: #d0bcff; border-color: #d0bcff; }
+html[data-platform="android"] .switch input:checked ~ .switch__knob { width: 24px; height: 24px; top: 4px; transform: translateX(20px); background: #381e72; }
+/* Sheets (M3 bottom sheet) */
+html[data-platform="android"] .sheet { background: #1d1b20; -webkit-backdrop-filter: none; backdrop-filter: none; border-radius: 28px 28px 0 0; }
+html[data-platform="android"] .sheet__grabber { width: 32px; height: 4px; background: #79747e; margin-top: 8px; }
+html[data-platform="android"] body.sheet-open .view { transform: none; filter: brightness(.5); border-radius: 0; }
+/* Island → Snackbar */
+html[data-platform="android"] .island { top: auto; bottom: calc(var(--tabbar-h) + var(--safe-bottom) + 12px); border-radius: 4px !important; background: #e6e1e5; color: #322f35; box-shadow: 0 4px 12px rgba(0,0,0,.4); }
+html[data-platform="android"] .island .island__sub { color: rgba(50,47,53,.7); }
+html[data-platform="android"] .island .island__lead { background: transparent !important; }
+html[data-platform="android"] .island__action { background: transparent; color: #6750a4; font-weight: 600; }
+html[data-platform="android"] .island.is-compact { width: calc(100vw - 32px); margin-left: calc((100vw - 32px) / -2); }
+html[data-platform="android"] .island.is-expanded { height: 64px; }
+/* Ripple */
+.m3-ripple { position: absolute; border-radius: 50%; pointer-events: none; background: currentColor; opacity: .14; transform: scale(0); animation: m3-ripple 520ms cubic-bezier(.2,0,0,1) forwards; }
+@keyframes m3-ripple { to { transform: scale(1); opacity: 0; } }
+html[data-platform="android"] .btn, html[data-platform="android"] .chip, html[data-platform="android"] .list-row, html[data-platform="android"] .card--tap, html[data-platform="android"] .nav-tile, html[data-platform="android"] .icon-btn, html[data-platform="android"] .choice { position: relative; overflow: hidden; }
+html[data-platform="android"] .pressable:active, html[data-platform="android"] .btn:active, html[data-platform="android"] .chip:active, html[data-platform="android"] .card--tap:active { transform: none; }

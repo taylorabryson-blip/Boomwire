@@ -171,3 +171,11 @@ export function Search({ placeholder = 'Search', value = '', onInput }) {
   const input = h('input', { type: 'search', placeholder, value, enterkeyhint: 'search', onInput: (e) => onInput(e.target.value) });
   return h('label', { class: 'search' }, icon('search', 16), input);
 }
+
+/** Time field: shows "7:00 AM" in our type; the native picker sits invisibly on top. */
+const fmtTime = (v) => { if (!v) return '—'; const [hh, mm] = v.split(':').map(Number); return `${hh % 12 || 12}:${String(mm).padStart(2, '0')} ${hh < 12 ? 'AM' : 'PM'}`; };
+export function TimeField({ value, onChange }) {
+  const text = h('span', { class: 'time-field__text' }, fmtTime(value));
+  const input = h('input', { type: 'time', step: 60, value, class: 'time-field__input', onChange: (e) => { if (!e.target.value) return; text.textContent = fmtTime(e.target.value); onChange(e.target.value); } });
+  return h('label', { class: 'time-field' }, text, input);
+}

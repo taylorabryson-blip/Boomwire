@@ -15,22 +15,23 @@ A log made at 11 pm belongs to that local day.
 
 All quantities are stored in **metric** (ml, kg, cm). Units are converted only for display.
 
-## Stores (schema v2)
+## Stores (schema v3)
 
 | Store | Phase | Indexes | Notes |
 |---|---|---|---|
-| `settings` | 1 | — | `units` ('imperial' default · 'metric'), `hydrationGoalMl`, `reminders` |
+| `settings` | 1 | — | `units` ('imperial' default · 'metric'), `hydrationGoalMl`, `reminders`, `nutritionTargets` ({mode: auto/manual, kcal, protein, carbs, fat, fiber}), `macroDisplay`, `lastSeenVersion` |
 | `hydrationLogs` | 1 | `byDate` | `date`, `time`, `amountMl` (1–5000), `provenance` |
-| `profile` | 2 | — | name, birthYear, sex, heightCm, experience, goal, style, focusAreas, environment, gear, defaults |
+| `profile` | 2 | — | name, birthYear, sex, heightCm, activityLevel, experience, goal (incl. fat_loss), style, focusAreas, environment, gear, defaults. Body weight lives in `bodyMetrics` (setup wizard and Personal Info write a dated weigh-in) |
 | `bodyMetrics` | 2 | `byDate` | weightKg + chest/waist/arms/thighs/calves/shoulders cm (≥1 required) |
 | `workouts` | 3 | `byDate` | name, status (in_progress/completed), startedAt, durationMin, exercises[{exerciseId, restSec, sets[{reps, weightKg, durationSec, completed}]}] |
 | `templates` | 3 | — | name, exercises with target sets (v2) |
 | `coach` | 4 | — | singletons `availability` (wake/sleep, busy/free blocks, days, length, preference) and `plan` (v2) |
 | `coachMessages` | 4 | `byDate` | Kratos chat history (v2) |
 | `exercises` | 3 | — | custom exercises (built-in DB ships as static data) |
-| `foods` | 5 | — | custom foods |
-| `foodLogs` | 5 | `byDate` | |
-| `recoveryLogs` | 7 | `byDate` | sleep, fatigue, subjective recovery |
+| `foods` | 5 | — | custom + saved/cached foods: name (≤200), brand, source (usda/off/custom), sourceId, verification (verified/community/user), basisLabel, basisGrams, nutrients{kcal, protein, carbs, fat, fiber, sugars, sodium, satfat}, portions, saved |
+| `foodLogs` | 5 | `byDate` | date, time, meal (breakfast/lunch/dinner/snacks), food snapshot (name, source, verification, basis, nutrients per basis), servings (basis multiples), portion label |
+| `savedMeals` | 5 | — | name, items[] of food snapshots + servings (added in v3) |
+| `recoveryLogs` | 7 | `byDate` | date, sleepHours, sleepQuality/energy/soreness/stress (1–5) |
 | `schedules` | 7 | — | |
 | `meta` | — | — | schema version bookkeeping |
 
@@ -62,6 +63,9 @@ from a newer schema are refused.
 ## Migration v2
 Adds `templates`, `coach`, `coachMessages`, and switches the display-unit
 preference to US customary (requested). Stored values are untouched.
+
+## Migration v3
+Adds the `savedMeals` store and remaps legacy gear ids (e.g. `dumbbell` → `dumbbells`) to the 78-item catalog. Additive only; no records are deleted.
 
 ## Push reminders (server)
 Supabase tables `hercules_push_devices` (device id, SHA-256 of device secret,

@@ -65,6 +65,30 @@ Users under ~19 (by birth year) never receive restrictive nutrition advice. Krat
 ## Schedule parser rules (`engines/coach/parser.js`)
 Bare times in a range: start 7–11 → AM, 12 → noon, 1–4 → PM, 5–6 → AM; the end is the first matching clock time after the start. Every assumption is echoed back to the user.
 
+## Nutrition (`engines/nutrition/nutrition.js`)
+Food values come from USDA FoodData Central SR Legacy (per 100 g, public domain, labelled *Verified*), Open Food Facts (labelled *Community*) or the user (*Your entry*). Nothing is invented.
+
+| ID | Rule |
+|---|---|
+| N1 | servings = (portion grams × quantity) ÷ basis grams; without gram weights, servings = quantity |
+| N2 | entry nutrients = basis nutrients × servings; day totals sum non-deleted entries |
+| N3 | macro % of energy uses 4 / 4 / 9 kcal per g (protein / carbs / fat) |
+| N4 | Mifflin-St Jeor BMR = 10·kg + 6.25·cm − 5·age + 5 (male) / −161 (female) / −78 (unspecified, midpoint) |
+| N5 | TDEE = BMR × activity (1.2 / 1.375 / 1.55 / 1.725 / 1.9). Goal: muscle +10 %, performance +5 %, fat loss −15 %, else 0; never below BMR. Under 19: fat loss treated as maintain and never below TDEE. Protein g/kg: muscle 1.8, fat loss 2.0, performance 1.6, else 1.4. Fat 27.5 % of kcal, carbs = remainder, fiber 14 g / 1,000 kcal. Labelled *Estimate* (±10 % or more) |
+| N6 | Daily summaries flag unlogged days instead of counting them as zero |
+| N7 | Averages divide by logged days only |
+| N8 | Adherence: calorie day = within ±10 % of target; protein day = ≥ target |
+
+Manual targets (Nutrition → Targets → Manual) override N5 entirely.
+
+## Comparisons & recovery (`engines/analytics/compare.js`)
+| ID | Rule |
+|---|---|
+| P1 | change(cur, prev) = {delta, pct}; pct is null when prev is 0 or missing |
+| P2 | Week vs last week: sessions, completed sets, volume (kg × reps), average logged kcal and protein |
+| P3 | A metric with no data in either week shows "—", never 0 % |
+| R1 | Readiness 0–100 = mean of available normalized inputs (sleep hours vs 8 h, quality, energy, inverted soreness and stress); needs ≥ 2 inputs, else no score |
+
 ## Rules for future phases
 
 - Energy expenditure (Phase 5) uses a published equation (Mifflin-St Jeor is the
