@@ -4,12 +4,14 @@
  *  - collapsing large title → compact glass top bar
  * Screen contract: `mount(root, { params }) => Promise<cleanup?>`.
  */
+import { installEdgeSwipe } from '../components/gestures.js';
 import { h } from '../components/dom.js';
 import { icon } from '../components/icons.js';
 import { ROUTES, ALIASES } from './routes.js';
 import { parseHash, goBack } from './nav.js';
 
 export function startRouter(view, tabbar, topbar) {
+  installEdgeSwipe(view);
   let cleanup = null, token = 0, lastDepth = null, io = null;
 
   async function swap(route, params, my) {
@@ -42,7 +44,8 @@ export function startRouter(view, tabbar, topbar) {
     const dir = lastDepth == null ? 'none' : route.depth > lastDepth ? 'push' : route.depth < lastDepth ? 'pop' : 'fade';
     lastDepth = route.depth;
     document.documentElement.dataset.nav = dir;
-    if (document.startViewTransition && dir !== 'none' && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const skip = window.__herculesSkipNavAnim; window.__herculesSkipNavAnim = false;
+    if (!skip && document.startViewTransition && dir !== 'none' && !matchMedia('(prefers-reduced-motion: reduce)').matches && document.documentElement.dataset.motion !== 'reduce') {
       const vt = document.startViewTransition(() => swap(route, params, my));
       await vt.updateCallbackDone.catch(() => {});
     } else {

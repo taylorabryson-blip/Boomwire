@@ -1,80 +1,97 @@
 /**
- * Dynamic Island–style live surface. A black pill that grows out of the top
- * of the screen (and out of the hardware island on iPhones that have one).
+ * System-style surfaces (replaces the old Dynamic Island imitation).
  *
- *  island.flash({...})  → expand briefly (confirmations, undo)
- *  island.live({...})   → persistent compact activity (workout timer, rest timer); tap to expand
- *  island.clear(id)     → end a live activity
+ *  island.flash({...})  → iOS notification banner: slides down from the top,
+ *                         swipe up to dismiss, tap to act. Queued, one at a time.
+ *  island.live({...})   → "Now playing"-style mini bar above the tab bar for
+ *                         ongoing activities (workout timer, rest timer). Tap opens.
+ *  island.clear(id)     → end the live activity.
+ *
+ * The export keeps the name `island` so call sites don't change.
  */
 import { h } from './dom.js';
 import { icon } from './icons.js';
 import { haptic } from './haptics.js';
+import { herculesMark } from './brand.js';
 
-let el = null, content = null, liveActivity = null, flashTimer = null, expandTimer = null;
+/* ---------- Banner ---------- */
+let bannerEl = null, showing = false, hideTimer = null;
+const queue = [];
 
-function mount() {
-  if (el) return;
-  content = h('div', { class: 'island__content' });
-  el = h('div', { class: 'island', role: 'status', 'aria-live': 'polite' }, content);
-  el.style.viewTransitionName = 'island';
-  el.addEventListener('click', (e) => {
-    if (e.target.closest('.island__action')) return;
-    if (liveActivity && !el.classList.contains('is-expanded')) { render(liveActivity, true); setState('expanded'); scheduleCollapse(4000); haptic(); }
-    else if (liveActivity?.onTap) liveActivity.onTap();
+function bannerNode(a) {
+  const node = h('div', { class: 'banner', role: 'status', 'aria-live': 'polite' },
+    h('div', { class: 'banner__app' }, a.icon ? icon(a.icon, 20) : herculesMark(22)),
+    h('div', { class: 'banner__body' },
+      h('div', { class: 'banner__top' }, h('span', { class: 'banner__title' }, a.title), h('span', { class: 'banner__time' }, 'now')),
+      a.subtitle && h('div', { class: 'banner__sub' }, a.subtitle)),
+    a.actionLabel && h('button', { class: 'banner__action', type: 'button', onClick: (e) => { e.stopPropagation(); a.onAction?.(); haptic(); dismiss(); } }, a.actionLabel));
+  node.style.setProperty('--banner-accent', a.accent ?? '#fff');
+
+  // Swipe up to dismiss, tap to act — same as iOS banners.
+  let y0 = null, dy = 0;
+  node.addEventListener('pointerdown', (e) => { y0 = e.clientY; dy = 0; node.style.transition = 'none'; node.setPointerCapture?.(e.pointerId); });
+  node.addEventListener('pointermove', (e) => {
+    if (y0 == null) return;
+    dy = e.clientY - y0;
+    node.style.transform = `translateY(${dy < 0 ? dy : Math.sqrt(dy) * 3}px)`;
   });
-  document.body.append(el);
+  const end = () => {
+    if (y0 == null) return;
+    y0 = null; node.style.transition = ''; node.style.transform = '';
+    if (dy < -24) dismiss();
+    else if (Math.abs(dy) < 6 && a.onAction && !a.actionLabel) { a.onAction(); dismiss(); }
+  };
+  node.addEventListener('pointerup', end);
+  node.addEventListener('pointercancel', end);
+  return node;
 }
 
-function setState(state) {
-  el.classList.toggle('is-compact', state === 'compact');
-  el.classList.toggle('is-expanded', state === 'expanded');
+function next() {
+  if (showing || !queue.length) return;
+  const a = queue.shift();
+  showing = true;
+  bannerEl = bannerNode(a);
+  document.body.append(bannerEl);
+  requestAnimationFrame(() => requestAnimationFrame(() => bannerEl?.classList.add('is-in')));
+  hideTimer = setTimeout(dismiss, a.duration ?? 3600);
 }
 
-function render(a, expanded) {
-  const lead = a.lead ?? (a.icon ? icon(a.icon, expanded ? 22 : 16) : null);
-  content.replaceChildren(...[
-    lead && h('div', { class: 'island__lead', style: a.leadColor ? { color: a.leadColor } : null }, lead),
-    h('div', { class: 'island__text' },
-      expanded ? [h('div', { class: 'island__title' }, a.title), a.subtitle && h('div', { class: 'island__sub' }, a.subtitle)] : (a.compactText ?? '')),
-    a.trail != null && h('div', { class: 'island__trail' }, typeof a.trail === 'function' ? a.trail() : a.trail),
-    expanded && a.actionLabel && h('button', { class: 'island__action', onClick: () => { a.onAction?.(); haptic(); returnToLive(); } }, a.actionLabel),
-    expanded && a.progress != null && h('div', { class: 'island__progress' }, h('i', { style: { transform: `scaleX(${Math.max(0, Math.min(1, a.progress))})` } })),
-  ].filter(Boolean));
-  el.style.setProperty('--island-accent', a.accent ?? '#fff');
+function dismiss() {
+  clearTimeout(hideTimer);
+  const el = bannerEl; bannerEl = null;
+  if (!el) return;
+  el.classList.remove('is-in');
+  el.addEventListener('transitionend', () => { el.remove(); showing = false; next(); }, { once: true });
+  setTimeout(() => { if (el.isConnected) { el.remove(); showing = false; next(); } }, 600);
 }
 
-function scheduleCollapse(ms) {
-  clearTimeout(expandTimer);
-  expandTimer = setTimeout(returnToLive, ms);
-}
+/* ---------- Live mini bar ---------- */
+let liveEl = null, liveActivity = null;
 
-function returnToLive() {
-  clearTimeout(flashTimer); clearTimeout(expandTimer);
-  if (liveActivity) { render(liveActivity, false); setState('compact'); }
-  else setState('none');
+function renderLive(a) {
+  if (!liveEl) {
+    liveEl = h('button', { class: 'livebar', type: 'button', 'aria-label': 'Open activity', onClick: () => { haptic(); liveActivity?.onTap?.(); } });
+    document.body.append(liveEl);
+    requestAnimationFrame(() => requestAnimationFrame(() => liveEl?.classList.add('is-in')));
+  }
+  liveEl.style.setProperty('--live-accent', a.accent ?? '#fff');
+  liveEl.replaceChildren(
+    h('span', { class: 'livebar__icon' }, icon(a.icon ?? 'training', 18)),
+    h('span', { class: 'livebar__text' }, h('span', { class: 'livebar__title' }, a.title ?? a.compactText ?? ''), a.subtitle && h('span', { class: 'livebar__sub' }, a.subtitle)),
+    a.trail != null && h('span', { class: 'livebar__trail num' }, typeof a.trail === 'function' ? a.trail() : a.trail),
+    a.progress != null && h('span', { class: 'livebar__progress' }, h('i', { style: { transform: `scaleX(${Math.max(0, Math.min(1, a.progress))})` } })));
+  document.body.classList.add('has-live');
 }
 
 export const island = {
-  /** Brief expanded confirmation. */
-  flash(a) {
-    mount();
-    render(a, true);
-    setState('expanded');
-    clearTimeout(flashTimer);
-    flashTimer = setTimeout(returnToLive, a.duration ?? 3200);
-  },
-  /** Start/update a persistent activity. `a.id` identifies it. */
-  live(a) {
-    mount();
-    const isNew = liveActivity?.id !== a.id;
-    liveActivity = a;
-    if (el.classList.contains('is-expanded') && !isNew) render(a, true);
-    else if (!flashTimer || isNew) { render(a, false); if (!el.classList.contains('is-expanded')) setState('compact'); }
-  },
+  flash(a) { queue.push(a); next(); },
+  live(a) { liveActivity = a; renderLive(a); },
   clear(id) {
     if (!liveActivity || (id && liveActivity.id !== id)) return;
     liveActivity = null;
-    if (!el.classList.contains('is-expanded')) setState('none');
+    document.body.classList.remove('has-live');
+    const el = liveEl; liveEl = null;
+    if (el) { el.classList.remove('is-in'); setTimeout(() => el.remove(), 400); }
   },
   get current() { return liveActivity; },
 };

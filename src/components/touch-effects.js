@@ -5,7 +5,7 @@
  *                 With a mouse, a softer lens appears on hover.
  *  Android:       Material 3 ripple from the touch point.
  */
-const PRESSABLE = '.btn, .chip, .icon-btn, button.list-row, .card--tap, .tabbar__item, .segmented__item, .nav-tile, .choice, .composer__send, .island__action, .set-check, .add-btn, .stepper button, .scale5 button, .accordion__head';
+const PRESSABLE = '.btn, .chip, .icon-btn, button.list-row, .card--tap, .tabbar__item, .segmented__item, .nav-tile, .choice, .composer__send, .banner__action, .livebar, .set-check, .add-btn, .stepper button, .scale5 button, .accordion__head';
 const android = () => document.documentElement.dataset.platform === 'android';
 
 function lensFor(el) {
@@ -45,7 +45,7 @@ export function installTouchEffects() {
   let active = null; // { el, lens }
   document.addEventListener('pointerdown', (e) => {
     const el = e.target.closest(PRESSABLE);
-    if (!el || el.disabled) return;
+    if (!el || el.disabled || document.documentElement.dataset.glass === 'off') return;
     if (android()) { ripple(el, e); return; }
     release(active?.lens);
     const lens = lensFor(el);

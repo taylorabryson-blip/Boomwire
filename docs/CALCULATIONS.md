@@ -62,6 +62,9 @@ Colors are normalized to the most-worked muscle in view. Never presented as meas
 
 Users under ~19 (by birth year) never receive restrictive nutrition advice. Kratos gives no calorie numbers until Phase 5 targets exist.
 
+## Phone alarms (`engines/coach/alarms.js`)
+| K6 | Per day: wake time; pre-workout meal/snack time from K5; a heads-up `lead` minutes (your workout reminder setting, default 30) before each session. Delivered to the Clock app through the user’s “Hercules Alarms” shortcut (Create Alarm) |
+
 ## Schedule parser rules (`engines/coach/parser.js`)
 Bare times in a range: start 7–11 → AM, 12 → noon, 1–4 → PM, 5–6 → AM; the end is the first matching clock time after the start. Every assumption is echoed back to the user.
 
@@ -79,7 +82,12 @@ Food values come from USDA FoodData Central SR Legacy (per 100 g, public domain,
 | N7 | Averages divide by logged days only |
 | N8 | Adherence: calorie day = within ±10 % of target; protein day = ≥ target |
 
-Manual targets (Nutrition → Targets → Manual) override N5 entirely.
+| N9 | Water target = max(1.5 L, 35 mL × kg) + 500 mL on planned training days, rounded to 50 mL (imperial: nearest 4 oz). A user-set goal overrides it. Estimate |
+| N10 | Spoken/typed meals are split on commas, “and”, “with”, “plus”; each item → quantity (digits, fractions, words like “two”, “half”), unit (cup, tbsp, oz, g, slice, scoop…), size (small–jumbo) and food words |
+| N11 | Portions: mass units convert exactly; household units use that food’s USDA measure; size words pick that measure; otherwise one typical unit (medium → large → piece → serving). Eggs default to large. Unmatched portions are marked *est.* |
+| N12 | Suggestions: foods you already log (plus a few lean staples), ranked by protein per kcal when > 10 g protein remains, sized to your usual portion but never above 90 % of the calories left |
+
+Manual targets (Nutrition → Targets → Manual) override N5 entirely. Food items said without a number use your last portion of that food (“your usual”).
 
 ## Comparisons & recovery (`engines/analytics/compare.js`)
 | ID | Rule |

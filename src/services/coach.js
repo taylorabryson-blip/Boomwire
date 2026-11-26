@@ -1,5 +1,5 @@
 /**
- * Kratos persistence: availability + plan singletons in the `coach` store,
+ * Cratos persistence: availability + plan singletons in the `coach` store,
  * chat history in `coachMessages`.
  */
 import * as repo from './storage/repository.js';
@@ -7,6 +7,7 @@ import { respond, GREETING } from '../engines/coach/kratos.js';
 import { planWeek, DEFAULT_AVAILABILITY } from '../engines/coach/planner.js';
 import { localDateKey } from '../utils/dates.js';
 import { activeTargets } from './nutrition/log.js';
+import { registerCustomGear } from '../data/exercises/gear.js';
 
 const serializePlan = (plan) => ({
   ...plan,
@@ -27,6 +28,7 @@ export async function savePlan(plan) {
 export async function regeneratePlan() {
   const [av, profile] = await Promise.all([getAvailability(), repo.getProfile()]);
   if (!av && !(await getPlan())) return null; // nothing set up yet: the wizard builds the first plan
+  registerCustomGear(profile.customGear?.items ?? []);
   const plan = planWeek({ availability: av ?? DEFAULT_AVAILABILITY, profile, today: new Date() });
   return savePlan(plan);
 }

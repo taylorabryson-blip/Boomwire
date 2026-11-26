@@ -57,14 +57,17 @@ html[data-platform="android"] .sheet { background: #1d1b20; -webkit-backdrop-fil
 html[data-platform="android"] .sheet__grabber { width: 32px; height: 4px; background: #79747e; margin-top: 8px; }
 html[data-platform="android"] body.sheet-open .view { transform: none; filter: brightness(.5); border-radius: 0; }
 /* Island → Snackbar */
-html[data-platform="android"] .island { top: auto; bottom: calc(var(--tabbar-h) + var(--safe-bottom) + 12px); border-radius: 4px !important; background: #e6e1e5; color: #322f35; box-shadow: 0 4px 12px rgba(0,0,0,.4); }
-html[data-platform="android"] .island .island__sub { color: rgba(50,47,53,.7); }
-html[data-platform="android"] .island .island__lead { background: transparent !important; }
-html[data-platform="android"] .island__action { background: transparent; color: #6750a4; font-weight: 600; }
-html[data-platform="android"] .island.is-compact { width: calc(100vw - 32px); margin-left: calc((100vw - 32px) / -2); }
-html[data-platform="android"] .island.is-expanded { height: 64px; }
 /* Ripple */
 .m3-ripple { position: absolute; border-radius: 50%; pointer-events: none; background: currentColor; opacity: .14; transform: scale(0); animation: m3-ripple 520ms cubic-bezier(.2,0,0,1) forwards; }
 @keyframes m3-ripple { to { transform: scale(1); opacity: 0; } }
 html[data-platform="android"] .btn, html[data-platform="android"] .chip, html[data-platform="android"] .list-row, html[data-platform="android"] .card--tap, html[data-platform="android"] .nav-tile, html[data-platform="android"] .icon-btn, html[data-platform="android"] .choice { position: relative; overflow: hidden; }
 html[data-platform="android"] .pressable:active, html[data-platform="android"] .btn:active, html[data-platform="android"] .chip:active, html[data-platform="android"] .card--tap:active { transform: none; }
+
+/* M3 snackbar in place of iOS banners; M3 surface for the live bar */
+html[data-platform="android"] .banner { top: auto; bottom: calc(var(--tabbar-h) + var(--safe-bottom) + 12px); border-radius: 4px; background: #e6e1e5; color: #322f35; -webkit-backdrop-filter: none; backdrop-filter: none; border: 0; box-shadow: 0 4px 12px rgba(0,0,0,.4); transform: translate(-50%, 140%); padding: 12px 8px 12px 16px; }
+html[data-platform="android"] .banner.is-in { transform: translate(-50%, 0); }
+html[data-platform="android"] .banner__app, html[data-platform="android"] .banner__time { display: none; }
+html[data-platform="android"] .banner__sub { color: rgba(50,47,53,.75); font-size: 14px; }
+html[data-platform="android"] .banner__title { font-size: 14px; }
+html[data-platform="android"] .banner__action { background: transparent; color: #6750a4; }
+html[data-platform="android"] .livebar { border-radius: 16px; background: #2b2930; -webkit-backdrop-filter: none; backdrop-filter: none; border: 0; }

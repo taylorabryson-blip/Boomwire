@@ -84,5 +84,5 @@ export function openGoalSheet(settings) {
     h('label', { class: 'field' }, input, h('span', { class: 'field__suffix' }, volumeInputUnit(units))),
     error,
     Button({ label: 'Save Goal', variant: 'primary', block: true, onClick: save }),
-    hydrationGoalMl && Button({ label: 'Remove Goal', variant: 'danger', block: true, onClick: async () => { await repo.updateSettings({ hydrationGoalMl: null }); sheet.close(); } })) });
+    hydrationGoalMl && Button({ label: 'Use Recommended Goal', block: true, onClick: async () => { await repo.updateSettings({ hydrationGoalMl: null }); sheet.close(); } })) });
 }

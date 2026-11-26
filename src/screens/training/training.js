@@ -40,7 +40,7 @@ export function mount(root) {
         Button({ label: 'Resume Workout', variant: 'primary', block: true, iconName: 'play', onClick: () => navigate(`#/workout?id=${active.id}`) }))
       : todays
         ? Card({ glass: true },
-          h('div', { class: 'row row--between', style: { alignItems: 'baseline' } }, h('div', { class: 't-footnote c-2', style: { fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.04em' } }, 'Kratos · today'), h('div', { class: 'rounded t-headline' }, fmt12(toMin(todays.start)))),
+          h('div', { class: 'row row--between', style: { alignItems: 'baseline' } }, h('div', { class: 't-footnote c-2', style: { fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.04em' } }, 'Cratos · today'), h('div', { class: 'rounded t-headline' }, fmt12(toMin(todays.start)))),
           h('div', { class: 't-title-2', style: { margin: '2px 0 12px' } }, todays.focus),
           Button({ label: `Start ${todays.focus}`, variant: 'primary', block: true, iconName: 'play', onClick: () => begin({ name: todays.focus, exercises: todays.exercises, planFocus: todays.focus }) }))
         : Card({ glass: true },

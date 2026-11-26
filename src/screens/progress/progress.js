@@ -179,10 +179,10 @@ async function recoveryView(el) {
   el.append(
     Card({ badge: Provenance('estimated') },
       h('div', { class: 'row', style: { gap: '16px' } },
-        ProgressRing({ progress: r == null ? null : r / 100, size: 92, stroke: 11, color: r == null ? '#fff' : r >= 75 ? '#30d158' : r >= 50 ? '#ffd60a' : '#ff9f0a', center: h('div', { class: 'rounded t-headline num' }, r == null ? '—' : String(r)) }),
-        h('div', { class: 'grow' }, h('div', { class: 't-headline' }, r == null ? 'No check-in today' : 'Readiness · self-reported'), h('div', { class: 't-footnote c-2' }, r == null ? 'Two taps tell Kratos how recovered you are.' : readinessAdvice(r))))),
+        ProgressRing({ progress: r == null ? null : r / 100, size: 80, stroke: 10, color: r == null ? '#fff' : r >= 75 ? '#30d158' : r >= 50 ? '#ffd60a' : '#ff9f0a', center: h('div', { class: 'rounded t-headline num' }, r == null ? '—' : String(r)) }),
+        h('div', { class: 'grow' }, h('div', { class: 't-headline' }, r == null ? 'No check-in today' : 'Readiness · self-reported'), h('div', { class: 't-footnote c-2' }, r == null ? 'Two taps tell Cratos how recovered you are.' : readinessAdvice(r))))),
     Card({ label: 'Sleep · 7 days', iconName: 'bed', badge: Provenance('recorded') },
-      BarChart({ bars: keys.map((d) => { const x = logs.find((l) => l.date === d); return { label: weekdayInitial(d), value: x?.sleepHours ?? null, highlight: d === today }; }), goal: 8, height: 110, formatMax: (v) => `${v} h` })),
+      BarChart({ bars: keys.map((d) => { const x = logs.find((l) => l.date === d); return { label: weekdayInitial(d), value: x?.sleepHours ?? null, highlight: d === today }; }), goal: 8, height: 72, formatMax: (v) => `${v} h` })),
     h('div', { class: 'tiles' },
       h('div', { class: 'tile' }, h('div', { class: 'tile__value' }, `${f1(avg('sleepHours'))} h`), h('div', { class: 'tile__label' }, 'avg sleep')),
       h('div', { class: 'tile' }, h('div', { class: 'tile__value' }, `${f1(avg('soreness'))}/5`), h('div', { class: 'tile__label' }, 'avg soreness')),
@@ -210,14 +210,14 @@ async function trendsView(el) {
       const dow = (new Date().getDay() + 6) % 7, ws = addDays(today, -dow);
       const weeks = Array.from({ length: 8 }, (_, i) => addDays(ws, -7 * (7 - i)));
       const t = weeklyTotals(workouts, weeks, addDays);
-      chart.replaceChildren(BarChart({ bars: t.map((x, i) => ({ label: i === 7 ? 'Now' : parseDateKey(x.weekStart).toLocaleDateString(undefined, { month: 'numeric', day: 'numeric' }), value: x.sessions ? weightValue(x.volume, u, 0) : null, highlight: i === 7 })), height: 130, formatMax: (v) => `${Math.round(v).toLocaleString()} ${weightUnit(u)}` }));
+      chart.replaceChildren(BarChart({ bars: t.map((x, i) => ({ label: i === 7 ? 'Now' : parseDateKey(x.weekStart).toLocaleDateString(undefined, { month: 'numeric', day: 'numeric' }), value: x.sessions ? weightValue(x.volume, u, 0) : null, highlight: i === 7 })), height: 84, formatMax: (v) => `${Math.round(v).toLocaleString()} ${weightUnit(u)}` }));
     } else if (trend === 'calories') {
       const keys = lastNDays(14, today);
       const days = dailySummaries(foodLogs, keys);
-      chart.replaceChildren(BarChart({ bars: days.map((d) => ({ label: weekdayInitial(d.date), value: d.logged ? Math.round(d.totals.kcal) : null, highlight: d.date === today })), height: 130, formatMax: (v) => `${v} kcal` }));
+      chart.replaceChildren(BarChart({ bars: days.map((d) => ({ label: weekdayInitial(d.date), value: d.logged ? Math.round(d.totals.kcal) : null, highlight: d.date === today })), height: 84, formatMax: (v) => `${v} kcal` }));
     } else {
       const w = bodyMetrics.filter((m) => m.weightKg != null).sort((a, b) => a.date.localeCompare(b.date)).slice(-30);
-      chart.replaceChildren(w.length >= 2 ? LineChart({ points: w.map((m) => ({ label: parseDateKey(m.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }), value: weightValue(m.weightKg, u) })), height: 130 }) : EmptyState({ inline: true, title: 'Log at least two weigh-ins' }));
+      chart.replaceChildren(w.length >= 2 ? LineChart({ points: w.map((m) => ({ label: parseDateKey(m.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }), value: weightValue(m.weightKg, u) })), height: 84 }) : EmptyState({ inline: true, title: 'Log at least two weigh-ins' }));
     }
   };
   el.append(

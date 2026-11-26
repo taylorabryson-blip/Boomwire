@@ -12,7 +12,8 @@ import { localDateKey, addDays, formatRelativeDay } from '../../utils/dates.js';
 import { volumeString, cupsString, flOzToMl } from '../../utils/units.js';
 import { dailyTotal, goalProgress } from '../../engines/calculations/hydration.js';
 import { byMeal, totals, macroPercents } from '../../engines/nutrition/nutrition.js';
-import { activeTargets } from '../../services/nutrition/log.js';
+import { openQuickLog } from './quick-log-sheet.js';
+import { activeTargets, waterGoal } from '../../services/nutrition/log.js';
 import { addWater, openAddWaterSheet } from '../shared/hydration-ui.js';
 import { liveScreen } from '../shared/live.js';
 
@@ -25,7 +26,9 @@ export function mount(root, { params }) {
   return liveScreen(root, async (refresh) => {
     const today = localDateKey();
     const date = viewDate ?? today;
-    const [settings, food, water, targets] = await Promise.all([repo.getSettings(), repo.listByDate('foodLogs', date), repo.listByDate('hydrationLogs', date), activeTargets()]);
+    const [settings0, food, water, targets] = await Promise.all([repo.getSettings(), repo.listByDate('foodLogs', date), repo.listByDate('hydrationLogs', date), activeTargets()]);
+    const wg = await waterGoal(settings0);
+    const settings = { ...settings0, hydrationGoalMl: wg.ml };
     const t = totals(food);
     const meals = byMeal(food);
     const hasTargets = targets && !targets.missing;
@@ -49,7 +52,7 @@ export function mount(root, { params }) {
           formatRelativeDay(date, today),
           h('button', { type: 'button', 'aria-label': 'Next day', disabled: date >= today, onClick: () => shift(1), class: 'icon-btn', style: { width: '26px', height: '26px', opacity: date >= today ? 0.3 : 1 } }, icon('chevronRight', 14))),
         title: 'Nutrition',
-        trailing: h('div', { class: 'row', style: { gap: '8px' } }, IconButton({ iconName: 'target', label: 'Targets', href: '#/nutrition-targets' }), IconButton({ iconName: 'analytics', label: 'Week summary', href: `#/nutrition-week?date=${date}` })),
+        trailing: h('div', { class: 'row', style: { gap: '8px' } }, IconButton({ iconName: 'analytics', label: 'Week summary', href: `#/nutrition-week?date=${date}` }), h('button', { class: 'icon-btn icon-btn--primary', type: 'button', 'aria-label': 'Say what you ate', onClick: () => openQuickLog({ date }) }, icon('mic', 18))),
       }),
       Card({},
         h('div', { class: 'row', style: { gap: '18px', alignItems: 'center' } },
@@ -69,7 +72,7 @@ export function mount(root, { params }) {
           h('span', { style: { color: 'var(--c-water)' } }, icon('drop', 22)),
           h('div', { class: 'grow' },
             h('div', { class: 't-headline num' }, volumeString(waterMl, settings.units)),
-            h('div', { class: 't-caption c-2' }, `${settings.units === 'metric' ? '' : cupsString(waterMl) + ' · '}${settings.hydrationGoalMl ? `${Math.round((goalProgress(waterMl, settings.hydrationGoalMl) ?? 0) * 100)}% of goal` : 'no goal set'}`)),
+            h('div', { class: 't-caption c-2' }, `${settings.units === 'metric' ? '' : cupsString(waterMl) + ' · '}${settings.hydrationGoalMl ? `${Math.round((goalProgress(waterMl, settings.hydrationGoalMl) ?? 0) * 100)}% of goal` : 'add weight for a goal'}`)),
           Button({ label: settings.units === 'metric' ? '+250 ml' : '+1 cup', size: 'small', onClick: () => addWater(settings.units === 'metric' ? 250 : Math.round(flOzToMl(8)), settings) }),
           h('button', { class: 'add-btn', type: 'button', 'aria-label': 'Custom amount', onClick: () => openAddWaterSheet(settings) }, icon('plus', 16)))),
       h('div', { class: 'meal-tiles' }, Object.entries(MEAL_LABELS).map(([m, label]) => {

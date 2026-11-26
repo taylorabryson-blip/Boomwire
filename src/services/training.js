@@ -1,4 +1,4 @@
-/** Workout lifecycle helpers used by Train, Kratos and Home. */
+/** Workout lifecycle helpers used by Train, Cratos and Home. */
 import * as repo from './storage/repository.js';
 import { localDateKey, localTime } from '../utils/dates.js';
 import { EXERCISE_BY_ID } from '../data/exercises/exercises.js';

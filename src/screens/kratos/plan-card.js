@@ -1,4 +1,4 @@
-/** The weekly plan, rendered as a card (Kratos chat, schedule screen). */
+/** The weekly plan, rendered as a card (Cratos chat, schedule screen). */
 import { h } from '../../components/dom.js';
 import { Card, Button } from '../../components/primitives.js';
 import { toast } from '../../components/overlays.js';

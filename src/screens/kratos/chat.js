@@ -1,4 +1,4 @@
-/** Ask Kratos — chat with the coach (secondary to the button-driven dashboard). */
+/** Ask Cratos — chat with the coach (secondary to the button-driven dashboard). */
 import { h } from '../../components/dom.js';
 import { icon } from '../../components/icons.js';
 import { kratosAvatar } from '../../components/brand.js';
@@ -7,6 +7,8 @@ import { haptic } from '../../components/haptics.js';
 import * as repo from '../../services/storage/repository.js';
 import { listMessages, sendToKratos, ensureGreeting, getPlan } from '../../services/coach.js';
 import { PlanCard } from './plan-card.js';
+import { listen, speak, stopSpeaking, voicePrefs } from '../../services/voice.js';
+import { toast } from '../../components/overlays.js';
 
 const SUGGESTIONS = [
   'What’s today?',
@@ -22,13 +24,14 @@ export async function mount(root) {
   await ensureGreeting();
   const chat = h('div', { class: 'chat' });
   root.append(
-    NavHeader({ title: 'Ask Kratos', back: { href: '#/kratos', label: 'Kratos' } }),
+    NavHeader({ title: 'Ask Cratos', back: { href: '#/kratos', label: 'Cratos' } }),
     chat);
 
-  const input = h('textarea', { rows: 1, placeholder: 'Tell Kratos your schedule…', enterkeyhint: 'send', 'aria-label': 'Message Kratos' });
+  const input = h('textarea', { rows: 1, placeholder: 'Tell Cratos your schedule…', enterkeyhint: 'send', 'aria-label': 'Message Cratos' });
   const send = h('button', { class: 'composer__send', type: 'button', 'aria-label': 'Send', disabled: true }, icon('send', 18));
   const chips = h('div', { class: 'chips chips--scroll' }, SUGGESTIONS.map((t) => h('button', { class: 'chip', type: 'button', onClick: () => submit(t) }, t)));
-  const composer = h('div', { class: 'composer' }, h('div', { class: 'composer__inner' }, chips, h('div', { class: 'composer__bar' }, input, send)));
+  const mic = h('button', { class: 'composer__mic', type: 'button', 'aria-label': 'Talk to Cratos' }, icon('mic', 20));
+  const composer = h('div', { class: 'composer' }, h('div', { class: 'composer__inner' }, chips, h('div', { class: 'composer__bar' }, mic, input, send)));
   document.body.append(composer);
 
   const grow = () => { input.style.height = 'auto'; input.style.height = `${Math.min(120, input.scrollHeight)}px`; send.disabled = !input.value.trim(); };
@@ -36,8 +39,24 @@ export async function mount(root) {
   input.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(input.value); } });
   send.addEventListener('click', () => submit(input.value));
 
+  // Voice: tap the mic, talk, it sends itself. Replies are read back in your chosen voice.
+  let rec = null;
+  const stopRec = () => { rec?.stop(); rec = null; mic.classList.remove('is-listening'); input.placeholder = 'Tell Cratos your schedule…'; };
+  mic.addEventListener('click', () => {
+    if (rec) { stopRec(); return; }
+    haptic();
+    rec = listen({
+      onPartial: (t) => { input.value = t; grow(); },
+      onFinal: (t) => { stopRec(); submit(t, { spoken: true }); },
+      onError: (code) => { stopRec(); if (code === 'not-allowed' || code === 'service-not-allowed') toast('Microphone blocked', { iconName: 'mic', subtitle: 'Allow it in Settings → Safari → Microphone, or use the keyboard’s 🎤.' }); },
+      onEnd: () => { if (rec) stopRec(); },
+    });
+    if (!rec) { input.focus(); toast('Use the keyboard’s 🎤 key', { iconName: 'mic', subtitle: 'Voice input isn’t available in this browser.' }); return; }
+    mic.classList.add('is-listening'); input.placeholder = 'Listening…';
+  });
+
   let busy = false;
-  async function submit(text) {
+  async function submit(text, { spoken = false } = {}) {
     text = text.trim();
     if (!text || busy) return;
     busy = true; haptic();
@@ -51,6 +70,11 @@ export async function mount(root) {
     await draw();
     haptic('success');
     busy = false;
+    const prefs = voicePrefs(await repo.getSettings());
+    if (prefs.replies === 'always' || (prefs.replies === 'voice' && spoken)) {
+      const last = (await listMessages()).filter((m) => m.role !== 'user').pop();
+      if (last) speak(last.text, prefs);
+    }
   }
 
   async function draw() {
@@ -76,5 +100,5 @@ export async function mount(root) {
 
   await draw();
   const off = repo.onChange(({ store }) => { if (store === 'coach' && !busy) draw(); });
-  return () => { off(); composer.remove(); };
+  return () => { off(); stopRec(); stopSpeaking(); composer.remove(); };
 }

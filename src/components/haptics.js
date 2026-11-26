@@ -22,7 +22,12 @@ function ensure() {
   document.body.append(label);
 }
 
+let enabled = (() => { try { return localStorage.getItem('hercules:haptics') !== '0'; } catch { return true; } })();
+export function setHapticsEnabled(v) { enabled = !!v; try { localStorage.setItem('hercules:haptics', v ? '1' : '0'); } catch { /* private mode */ } }
+export const hapticsEnabled = () => enabled;
+
 export function haptic(kind = 'light') {
+  if (!enabled) return;
   try {
     ensure();
     if (navigator.vibrate) navigator.vibrate(kind === 'success' ? [8, 40, 12] : kind === 'heavy' ? 18 : 8);

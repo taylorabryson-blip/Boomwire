@@ -1,5 +1,5 @@
 /**
- * Home — fits one screen: Kratos' next move, three rings, four quick actions.
+ * Home — fits one screen: Cratos' next move, three rings, four quick actions.
  */
 import { h } from '../../components/dom.js';
 import { icon } from '../../components/icons.js';
@@ -8,7 +8,7 @@ import { NavHeader, Card, ProgressRing, Button, IconButton } from '../../compone
 import * as repo from '../../services/storage/repository.js';
 import { getPlan } from '../../services/coach.js';
 import { startWorkout, activeWorkout } from '../../services/training.js';
-import { activeTargets } from '../../services/nutrition/log.js';
+import { activeTargets, waterGoal } from '../../services/nutrition/log.js';
 import { navigate } from '../../navigation/nav.js';
 import { localDateKey, addDays, formatLongDate } from '../../utils/dates.js';
 import { volumeString, flOzToMl } from '../../utils/units.js';
@@ -29,10 +29,11 @@ export function mount(root) {
       repo.getSettings(), repo.getProfile(), repo.listByDate('hydrationLogs', today), repo.listByDate('workouts', ws, today),
       repo.listByDate('foodLogs', today), getPlan(), activeWorkout(), activeTargets(),
     ]);
+    const wg = await waterGoal(settings);
     const waterMl = dailyTotal(water, today);
     const done = completedWorkouts(workouts).length;
     const planned = plan?.sessions?.length ?? 0;
-    const kcal = totals(food).kcal;
+    const { kcal, protein } = totals(food);
     const hasT = targets && !targets.missing;
 
     return [
@@ -41,10 +42,13 @@ export function mount(root) {
       Card({},
         h('div', { class: 'row', style: { justifyContent: 'space-between' } },
           ring({ progress: hasT ? kcal / targets.kcal : null, color: '#fff', value: `${Math.round(kcal)}`, label: hasT ? `of ${targets.kcal} kcal` : 'kcal', href: '#/nutrition' }),
-          ring({ progress: goalProgress(waterMl, settings.hydrationGoalMl), color: 'var(--c-water)', value: volumeString(waterMl, settings.units), label: settings.hydrationGoalMl ? `of ${volumeString(settings.hydrationGoalMl, settings.units)}` : 'water', href: '#/nutrition' }),
-          ring({ progress: planned ? done / planned : null, color: '#30d158', value: `${done}${planned ? `/${planned}` : ''}`, label: 'workouts', href: '#/train' }))),
+          ring({ progress: hasT ? protein / targets.protein : null, color: '#ff9f0a', value: `${Math.round(protein)} g`, label: hasT ? `of ${targets.protein} g protein` : 'protein', href: '#/nutrition' }),
+          ring({ progress: goalProgress(waterMl, wg.ml), color: 'var(--c-water)', value: volumeString(waterMl, settings.units), label: wg.ml ? `of ${volumeString(wg.ml, settings.units)}` : 'water', href: '#/nutrition' })),
+        h('div', { class: 't-caption c-2', style: { textAlign: 'center', marginTop: '10px' } }, hasT
+          ? `Today’s targets · ${targets.source === 'manual' ? 'set by you' : 'recommended for your body & goal'}${wg.trainingToday ? ' · training day' : ''}`
+          : h('a', { href: '#/kratos-setup', style: { color: 'inherit', textDecoration: 'underline' } }, 'Add height & weight to get daily targets'))),
       h('div', { class: 'grid-2' },
-        Button({ label: 'Log Food', iconName: 'apple', onClick: () => navigate(`#/add-food?meal=${mealForNow()}&date=${today}`) }),
+        Button({ label: 'Log Food', iconName: 'mic', onClick: () => import('../nutrition/quick-log-sheet.js').then((m) => m.openQuickLog({ date: today })) }),
         Button({ label: settings.units === 'metric' ? '+250 ml' : '+1 Cup', iconName: 'drop', onClick: () => addWater(settings.units === 'metric' ? 250 : Math.round(flOzToMl(8)), settings) }),
         Button({ label: active ? 'Resume' : 'Workout', iconName: active ? 'play' : 'training', onClick: async () => { const w = active ?? await startWorkout({ name: 'Workout' }); navigate(`#/workout?id=${w.id}`); } }),
         Button({ label: 'Check-in', iconName: 'heart', onClick: openCheckin })),
@@ -65,7 +69,7 @@ function ring({ progress, color, value, label, href }) {
 
 function kratosCard({ plan, active }) {
   const head = (line) => h('div', { class: 'row', style: { marginBottom: '12px' } }, kratosAvatar(38),
-    h('div', { class: 'grow' }, h('div', { class: 't-headline' }, 'Kratos'), h('div', { class: 't-footnote c-2' }, line)));
+    h('div', { class: 'grow' }, h('div', { class: 't-headline' }, 'Cratos'), h('div', { class: 't-footnote c-2' }, line)));
   if (active) {
     return Card({ glass: true }, head('Finish what you started.'),
       Button({ label: `Resume ${active.name}`, variant: 'primary', block: true, iconName: 'play', onClick: () => navigate(`#/workout?id=${active.id}`) }));

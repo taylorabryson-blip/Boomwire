@@ -42,6 +42,9 @@ export const SCHEMAS = {
       nutritionTargets: { type: 'object', nullable: true },
       macroDisplay: { type: 'enum', values: ['grams', 'percent'], nullable: true },
       lastSeenVersion: { type: 'text', nullable: true },
+      voice: { type: 'object', nullable: true },
+      appearance: { type: 'object', nullable: true },
+      widgetKey: { type: 'text', nullable: true },
     },
   },
   hydrationLogs: {
@@ -66,7 +69,8 @@ export const SCHEMAS = {
       sessionMinutes: { type: 'int', nullable: true, min: 15, max: 180 },
       activityLevel: { type: 'enum', values: ACTIVITY, nullable: true },
       environment: { type: 'enum', values: ENVIRONMENTS.map((e) => e.id), nullable: true },
-      gear: { type: 'enumArray', values: GEAR.map((g) => g.id), nullable: true },
+      gear: { type: 'gearArray', values: GEAR.map((g) => g.id), nullable: true },
+      customGear: { type: 'object', nullable: true },
       style: { type: 'enum', values: STYLES.map((x) => x.id), nullable: true },
       focusAreas: { type: 'enumArray', values: FOCUS_AREAS.map((x) => x.id), nullable: true },
     },
@@ -180,8 +184,8 @@ export const STORE_LABELS = {
   settings: 'Settings', hydrationLogs: 'Hydration entries', profile: 'Profile',
   bodyMetrics: 'Body metric entries', workouts: 'Workouts', templates: 'Workout templates',
   exercises: 'Custom exercises', foods: 'Custom foods', foodLogs: 'Food entries',
-  recoveryLogs: 'Recovery entries', schedules: 'Schedules', coach: 'Kratos plan & schedule',
-  coachMessages: 'Kratos messages',
+  recoveryLogs: 'Recovery entries', schedules: 'Schedules', coach: 'Cratos plan & schedule',
+  coachMessages: 'Cratos messages',
 };
 
 const ISO_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/;
@@ -207,6 +211,9 @@ function checkField(name, rule, value, errors) {
     case 'enum': if (!rule.values.includes(value)) errors.push(`${name} must be one of ${rule.values.join(', ')}`); break;
     case 'boolean': if (typeof value !== 'boolean') errors.push(`${name} must be true/false`); break;
     case 'object': if (typeof value !== 'object' || Array.isArray(value)) errors.push(`${name} must be an object`); break;
+    case 'gearArray':
+      if (!Array.isArray(value) || value.some((v) => !(rule.values.includes(v) || /^custom:[a-z0-9_-]{1,40}$/.test(v)))) errors.push(`${name} must be a list of known or custom equipment`);
+      break;
     case 'enumArray':
       if (!Array.isArray(value) || value.some((v) => !rule.values.includes(v))) errors.push(`${name} must be a list of ${rule.values.join(', ')}`);
       break;
@@ -315,10 +322,10 @@ export class ValidationError extends Error {
   }
 }
 
-export const DEFAULT_SETTINGS = Object.freeze({ units: 'imperial', hydrationGoalMl: null, reminders: null, nutritionTargets: null, macroDisplay: 'grams', lastSeenVersion: null });
+export const DEFAULT_SETTINGS = Object.freeze({ units: 'imperial', hydrationGoalMl: null, reminders: null, nutritionTargets: null, macroDisplay: 'grams', lastSeenVersion: null, voice: null, appearance: null, widgetKey: null });
 export const DEFAULT_PROFILE = Object.freeze({
   displayName: null, birthYear: null, sex: null, heightCm: null, experience: null, goal: null,
-  trainingDaysTarget: null, sessionMinutes: null, activityLevel: null, environment: null, gear: null, style: null, focusAreas: null,
+  trainingDaysTarget: null, sessionMinutes: null, activityLevel: null, environment: null, gear: null, customGear: null, style: null, focusAreas: null,
 });
 
 /** Approximate age from birth year (±1 year). null when unknown. */

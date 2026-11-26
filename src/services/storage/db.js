@@ -31,7 +31,7 @@ export const MIGRATIONS = [
     for (const s of DATED_STORES) make(s, [['byDate', 'date']]);
   },
 
-  // v2 — Phases 2–4 + Kratos: templates, coach state, coach messages.
+  // v2 — Phases 2–4 + Cratos: templates, coach state, coach messages.
   //       Switch the display-unit preference to US customary (oz/lb/in), as
   //       requested. Stored values are metric and are NOT modified.
   (db, tx) => {

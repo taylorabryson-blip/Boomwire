@@ -1,5 +1,5 @@
 /**
- * Kratos weekly planner — deterministic scheduling, documented in
+ * Cratos weekly planner — deterministic scheduling, documented in
  * docs/CALCULATIONS.md (K1–K5).
  *
  * K1 Free windows per day = [wake + 30 min, sleep − 90 min] minus busy blocks

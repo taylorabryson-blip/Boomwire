@@ -116,3 +116,15 @@ export function adherence(days, target) {
   const pro = target.protein ? logged.filter((d) => d.totals.protein >= target.protein * 0.9).length : null;
   return { calorieDays: cal, proteinDays: pro, logged: logged.length };
 }
+
+/**
+ * N9 — Daily water recommendation (Estimate).
+ * 35 mL per kg body weight (a widely used clinical rule of thumb, ~30–35 mL/kg),
+ * +500 mL on training days, floored at 1.5 L, rounded to 50 mL.
+ * Food supplies part of total water; this is a drinking target, not a medical limit.
+ */
+export function waterTarget({ weightKg, trainingToday = false } = {}) {
+  if (!(weightKg > 0)) return null;
+  const ml = Math.max(1500, weightKg * 35) + (trainingToday ? 500 : 0);
+  return Math.round(ml / 50) * 50;
+}

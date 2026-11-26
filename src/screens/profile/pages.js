@@ -6,7 +6,7 @@ import { openSheet, toast } from '../../components/overlays.js';
 import { haptic } from '../../components/haptics.js';
 import * as repo from '../../services/storage/repository.js';
 import { regeneratePlan } from '../../services/coach.js';
-import { GEAR_CATEGORIES, GEAR, ENVIRONMENTS, STYLES, FOCUS_AREAS, exercisesForGear } from '../../data/exercises/gear.js';
+import { GEAR_CATEGORIES, GEAR, GEAR_BY_ID, ENVIRONMENTS, STYLES, FOCUS_AREAS, exercisesForGear, registerCustomGear } from '../../data/exercises/gear.js';
 import { EXERCISES } from '../../data/exercises/exercises.js';
 import { ACTIVITY_LABELS } from '../../engines/nutrition/nutrition.js';
 import { isDeveloping } from '../../data/models.js';
@@ -89,7 +89,7 @@ export function style(root) {
           haptic(); paint();
         } }, f.label)));
         paint();
-        openSheet({ title: 'Focus Areas', content: h('div', { class: 'stack' }, h('p', { class: 't-footnote c-2', style: { margin: 0 } }, 'Pick up to three. Kratos adds extra volume here.'), chips), onClose: () => save({ focusAreas: [...focus] }) });
+        openSheet({ title: 'Focus Areas', content: h('div', { class: 'stack' }, h('p', { class: 't-footnote c-2', style: { margin: 0 } }, 'Pick up to three. Cratos adds extra volume here.'), chips), onClose: () => save({ focusAreas: [...focus] }) });
       } })),
       h('div', {},
         h('div', { class: 'list' }, STYLES.map((s) => h('button', { class: 'list-row', type: 'button', 'aria-pressed': String(p.style === s.id), onClick: () => { haptic(); save({ style: s.id }); } },
@@ -105,13 +105,14 @@ let gearQuery = '';
 export async function gear(root) {
   let p = await repo.getProfile();
   let owned = new Set(p.gear ?? []);
+  registerCustomGear(p.customGear?.items ?? []);
   const summary = h('div', { class: 't-footnote c-2', style: { padding: '0 4px' } });
-  const listWrap = h('div', {});
+  const listWrap = h('div', { class: 'stack' });
   const persist = async () => { await save({ gear: [...owned] }); p = await repo.getProfile(); updateSummary(); };
   const updateSummary = () => {
     summary.textContent = p.gear == null
-      ? `Not set — all ${EXERCISES.length} exercises available. Pick a preset or your items.`
-      : `${owned.size} of ${GEAR.length} items · ${exercisesForGear([...owned]).length} of ${EXERCISES.length} exercises available`;
+      ? `No gear set — all ${EXERCISES.length} exercises shown`
+      : `${owned.size} items · ${exercisesForGear([...owned]).length} of ${EXERCISES.length} exercises available`;
   };
   const check = (on) => h('span', { class: 'set-check', style: on ? { background: '#30d158', color: '#000' } : null }, icon('check', 16));
 
@@ -136,10 +137,57 @@ export async function gear(root) {
       listWrap.replaceChildren(items.length ? h('div', { class: 'list' }, items.slice(0, 8).map((g) => row(g, render))) : Card({}, h('div', { class: 't-subhead c-2' }, 'No equipment matches.')));
       return;
     }
-    listWrap.replaceChildren(h('div', { class: 'list' }, GEAR_CATEGORIES.map((c) => {
-      const n = c.items.filter(([id]) => owned.has(id)).length;
-      return ListRow({ title: c.label, value: `${n} of ${c.items.length}`, onClick: () => openCategory(c) });
-    })));
+    const custom = p.customGear?.items ?? [];
+    listWrap.replaceChildren(
+      h('div', { class: 'gear-tiles' }, GEAR_CATEGORIES.map((c) => {
+        const n = c.items.filter(([id]) => owned.has(id)).length;
+        return h('button', { class: 'gear-tile', type: 'button', onClick: () => openCategory(c) },
+          h('span', { class: 'gear-tile__label' }, c.short ?? c.label), h('span', { class: `gear-tile__count${n ? ' is-on' : ''}` }, `${n}/${c.items.length}`));
+      })),
+      List(
+        custom.length > 0 && ListRow({ iconName: 'star', title: 'My Equipment', value: String(custom.length), onClick: openMine }),
+        ListRow({ iconName: 'plus', title: 'Add Your Own Equipment', onClick: addCustom })));
+  }
+
+  // Anything not in the catalog: name it, say what it works like, Cratos plans with it.
+  const LIKE = [['dumbbells', 'Dumbbells'], ['barbell', 'Barbell'], ['kettlebells', 'Kettlebell'], ['cable_station', 'Cable / pulley'], ['flat_bench', 'Bench'],
+    ['power_rack', 'Rack'], ['pullup_bar', 'Pull-up bar'], ['resistance_bands', 'Bands'], ['suspension_trainer', 'Straps / TRX'], ['lat_pulldown', 'Pulldown'],
+    ['seated_row', 'Row machine'], ['chest_press_machine', 'Press machine'], ['leg_press', 'Leg press'], ['leg_extension', 'Leg extension'], ['leg_curl', 'Leg curl'],
+    ['plyo_box', 'Box / step'], ['sled', 'Sled'], ['bike', 'Bike'], ['treadmill', 'Treadmill'], ['rower', 'Rower'], ['mat', 'Mat only']];
+  async function saveCustom(items) {
+    registerCustomGear(items);
+    const ids = new Set(items.map((x) => x.id));
+    const gearList = [...owned].filter((g) => !g.startsWith('custom:') || ids.has(g));
+    items.forEach((x) => { if (!gearList.includes(x.id)) gearList.push(x.id); });
+    owned = new Set(gearList);
+    await save({ customGear: { items }, gear: gearList }); p = await repo.getProfile(); updateSummary(); render();
+  }
+  function addCustom() {
+    const like = new Set();
+    const name = h('input', { type: 'text', placeholder: 'e.g. Rogue Monster Lite rack', maxlength: 60, autocomplete: 'off' });
+    const chips = h('div', { class: 'chips' }, LIKE.map(([id, label]) => h('button', { class: 'chip', type: 'button', 'aria-pressed': 'false', onClick: (e) => {
+      like.has(id) ? like.delete(id) : like.add(id); e.currentTarget.setAttribute('aria-pressed', String(like.has(id))); haptic();
+    } }, label)));
+    const err = h('div', { class: 'field-error' });
+    const { close } = openSheet({ title: 'Add Equipment', content: h('div', { class: 'stack' },
+      h('label', { class: 'field' }, name),
+      h('div', { class: 't-footnote c-2' }, 'Works like… (pick any, so Cratos knows what exercises it unlocks)'), chips, err,
+      Button({ label: 'Add Equipment', variant: 'primary', block: true, onClick: async () => {
+        const label = name.value.trim();
+        if (!label) { err.textContent = 'Give it a name.'; return; }
+        const slug = label.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 32) || 'item';
+        const items = [...(p.customGear?.items ?? []).filter((x) => x.id !== `custom:${slug}`), { id: `custom:${slug}`, label, like: [...like] }];
+        await saveCustom(items); close(); haptic('success');
+        toast(`Added ${label}`, { subtitle: like.size ? `Unlocks ${exercisesForGear([...owned]).length} exercises total` : 'Saved to My Equipment' });
+      } })) });
+    setTimeout(() => name.focus(), 350);
+  }
+  function openMine() {
+    const items = p.customGear?.items ?? [];
+    const { close } = openSheet({ title: 'My Equipment', content: List(...items.map((it) => ListRow({
+      title: it.label, subtitle: it.like?.length ? `Works like ${it.like.map((x) => GEAR_BY_ID[x]?.label ?? x).join(', ')}` : 'Tracked only',
+      trailing: h('span', { class: 't-footnote', style: { color: '#ff453a' } }, 'Remove'), chevron: false,
+      onClick: async () => { await saveCustom(items.filter((x) => x.id !== it.id)); close(); toast(`Removed ${it.label}`, { iconName: 'trash' }); } }))) });
   }
   function row(g, after) {
     return h('button', { class: 'list-row', type: 'button', onClick: () => { owned.has(g.id) ? owned.delete(g.id) : owned.add(g.id); haptic(); persist(); after(); } },

@@ -1,13 +1,13 @@
 /**
- * Kratos — button-driven coach dashboard (fits one screen).
+ * Cratos — button-driven coach dashboard (fits one screen).
  * Week at a glance · next session with Start · fuel for today · recovery call · actions.
- * Chat is a secondary tool ("Ask Kratos").
+ * Chat is a secondary tool ("Ask Cratos").
  */
 import { h } from '../../components/dom.js';
 import { icon } from '../../components/icons.js';
 import { kratosAvatar } from '../../components/brand.js';
-import { NavHeader, Card, Button, EmptyState, IconButton } from '../../components/primitives.js';
-import { toast } from '../../components/overlays.js';
+import { NavHeader, Card, Button, EmptyState, IconButton, List, ListRow } from '../../components/primitives.js';
+import { toast, openSheet } from '../../components/overlays.js';
 import * as repo from '../../services/storage/repository.js';
 import { getPlan, getAvailability } from '../../services/coach.js';
 import { startWorkout, activeWorkout } from '../../services/training.js';
@@ -33,14 +33,14 @@ export function mount(root) {
     const [plan, av, active, workouts, food, targets, check] = await Promise.all([
       getPlan(), getAvailability(), activeWorkout(), repo.listByDate('workouts', weekStart, addDays(weekStart, 6)),
       repo.listByDate('foodLogs', today), activeTargets(), todaysCheckin(today)]);
-    const header = NavHeader({ title: 'Kratos', eyebrow: 'God of strength · your coach', trailing: kratosAvatar(40) });
+    const header = NavHeader({ title: 'Cratos', eyebrow: 'Your coach', trailing: kratosAvatar(40) });
 
     if (!plan?.sessions?.length) {
       return [header,
         Card({ glass: true },
           EmptyState({ iconNode: kratosAvatar(56), title: 'Let’s build your week.', body: 'A few quick taps: your schedule, sleep, how often you can train, where, and what you want. I’ll pick your days, times and workouts.' }),
           Button({ label: av ? 'Finish Setup' : 'Start Setup', variant: 'primary', block: true, onClick: () => navigate('#/kratos-setup') })),
-        Button({ label: 'Ask Kratos a Question', iconName: 'chat', block: true, onClick: () => navigate('#/kratos-chat') })];
+        Button({ label: 'Ask Cratos a Question', iconName: 'chat', block: true, onClick: () => navigate('#/kratos-chat') })];
     }
 
     const doneDays = new Set(completedWorkouts(workouts).map((w) => w.date));
@@ -87,10 +87,18 @@ export function mount(root) {
           h('div', { class: 't-footnote c-2' }, r != null ? readinessAdvice(r) : 'Check in so I can adjust today’s training.')),
         h('span', { class: 'list-row__chevron' }, icon('chevronRight', 16))));
 
-    const planHeader = NavHeader({ title: 'Kratos', eyebrow: 'God of strength · your coach',
+    const planHeader = NavHeader({ title: 'Cratos', eyebrow: 'Your coach',
       trailing: h('div', { class: 'row', style: { gap: '8px' } },
-        IconButton({ iconName: 'chat', label: 'Ask Kratos', href: '#/kratos-chat' }),
-        IconButton({ iconName: 'calendar', label: 'Add plan to Calendar', onClick: async () => { await downloadPlanICS(plan); toast('Calendar file ready', { iconName: 'calendar' }); } }),
+        IconButton({ iconName: 'chat', label: 'Ask Cratos', href: '#/kratos-chat' }),
+        IconButton({ iconName: 'alarm', label: 'Alarms and calendar', onClick: async () => {
+          const { alarmsFor, alarmShortcutURL } = await import('../../services/widgets.js');
+          const t = new Date(); t.setDate(t.getDate() + 1);
+          const al = await alarmsFor(t);
+          const { close } = openSheet({ title: 'Put It on Your Phone', content: List(
+            ListRow({ iconName: 'alarm', title: 'Set Tomorrow’s Alarms', subtitle: al.map((x) => `${fmt12(toMin(x.time))} ${x.label}`).join(' · ') || 'Nothing planned', chevron: false, onClick: () => { close(); if (al.length) location.href = alarmShortcutURL(al); } }),
+            ListRow({ iconName: 'calendar', title: 'Add Week to Calendar', chevron: false, onClick: async () => { close(); await downloadPlanICS(plan); toast('Calendar file ready', { iconName: 'calendar' }); } }),
+            ListRow({ iconName: 'widget', title: 'Widgets & Alarm Setup', href: '#/widgets' })) });
+        } }),
         IconButton({ iconName: 'edit', label: 'Edit plan', href: '#/kratos-setup' })) });
     return [planHeader, strip, sessionCard, fuel, recovery];
   });

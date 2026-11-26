@@ -1,12 +1,12 @@
 /**
  * Route table. `tab` = highlighted tab; `depth` drives push/pop animations.
- * Tabs: Home · Train · Kratos · Nutrition · Progress.
+ * Tabs: Home · Train · Cratos · Nutrition · Progress.
  * Screens export `mount` (default) or a named export given by `fn`.
  */
 export const TABS = [
   { id: 'home', label: 'Home', icon: 'home' },
   { id: 'train', label: 'Train', icon: 'training' },
-  { id: 'kratos', label: 'Kratos', icon: 'kratos' },
+  { id: 'kratos', label: 'Cratos', icon: 'kratos' },
   { id: 'nutrition', label: 'Nutrition', icon: 'nutrition' },
   { id: 'progress', label: 'Progress', icon: 'analytics' },
 ];
@@ -38,6 +38,8 @@ export const ROUTES = {
   'profile-style': r('home', 2, () => import('../screens/profile/pages.js'), 'style'),
   gear: r('home', 2, () => import('../screens/profile/pages.js'), 'gear'),
   settings: r('home', 2, () => import('../screens/settings/settings.js')),
+  widgets: r('home', 3, () => import('../screens/settings/widgets.js')),
+  personalization: r('home', 3, () => import('../screens/settings/personalization.js')),
   notifications: r('home', 3, () => import('../screens/settings/notifications.js')),
 };
 

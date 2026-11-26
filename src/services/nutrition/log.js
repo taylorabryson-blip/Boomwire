@@ -2,7 +2,7 @@
 import * as repo from '../storage/repository.js';
 import { localTime } from '../../utils/dates.js';
 import { NUTRIENT_KEYS } from '../../data/models.js';
-import { computeTargets } from '../../engines/nutrition/nutrition.js';
+import { computeTargets, waterTarget } from '../../engines/nutrition/nutrition.js';
 import { approxAge } from '../../data/models.js';
 
 const cleanNutrients = (n) => Object.fromEntries(NUTRIENT_KEYS.map((k) => [k, n?.[k] == null ? (['kcal', 'protein', 'carbs', 'fat'].includes(k) ? 0 : null) : Number(n[k])]));
@@ -63,4 +63,20 @@ export async function activeTargets() {
   const computed = computeTargets({ weightKg: w?.weightKg, heightCm: profile.heightCm, age: approxAge(profile), sex: profile.sex, activityLevel: profile.activityLevel, goal: profile.goal });
   if (computed.missing?.length) return { missing: computed.missing, source: 'auto' };
   return { ...computed, source: 'auto' };
+}
+
+/**
+ * Today's water goal: the user's own number if they set one, otherwise N9 from
+ * latest body weight (+ training-day bump from the coach plan). { ml, auto } or { ml: null }.
+ */
+export async function waterGoal(settings) {
+  settings ??= await repo.getSettings();
+  if (settings.hydrationGoalMl) return { ml: settings.hydrationGoalMl, auto: false };
+  const [metrics, plan] = await Promise.all([repo.list('bodyMetrics'), repo.get('coach', 'plan').catch(() => null)]);
+  const w = metrics.filter((m) => m.weightKg != null).sort((a, b) => b.date.localeCompare(a.date))[0];
+  const dow = (new Date().getDay() + 6) % 7; // 0 = Monday, matches planner
+  const trainingToday = !!plan?.sessions?.some((x) => x.day === dow);
+  let ml = waterTarget({ weightKg: w?.weightKg, trainingToday });
+  if (ml && settings.units !== 'metric') ml = Math.round(Math.round(ml / 29.5735 / 4) * 4 * 29.5735); // whole half-cups in oz
+  return { ml, auto: ml != null, trainingToday };
 }

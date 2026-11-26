@@ -1,5 +1,5 @@
 /**
- * Calendar export: turns a Kratos plan into weekly recurring events with a
+ * Calendar export: turns a Cratos plan into weekly recurring events with a
  * 30-minute alert. On iPhone, opening the .ics adds them to Calendar, which
  * then reminds you even with Hercules closed.
  */
@@ -13,7 +13,7 @@ const local = (d, min) => `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.get
 const esc = (s) => String(s).replace(/[\\;,]/g, (c) => `\\${c}`).replace(/\n/g, '\\n');
 
 export function buildPlanICS(plan, from = new Date()) {
-  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Hercules//Kratos Plan//EN', 'CALSCALE:GREGORIAN'];
+  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Hercules//Cratos Plan//EN', 'CALSCALE:GREGORIAN'];
   for (const s of plan.sessions) {
     const first = new Date(from.getFullYear(), from.getMonth(), from.getDate());
     const dow = (first.getDay() + 6) % 7;
@@ -26,7 +26,7 @@ export function buildPlanICS(plan, from = new Date()) {
       `DTEND:${local(first, toMin(s.end))}`,
       `RRULE:FREQ=WEEKLY;BYDAY=${BYDAY[s.day]}`,
       `SUMMARY:${esc(`Hercules · ${s.focus}`)}`,
-      `DESCRIPTION:${esc(`Kratos plan\n${desc}`)}`,
+      `DESCRIPTION:${esc(`Cratos plan\n${desc}`)}`,
       'BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${esc(`${s.focus} in 30 minutes. Let’s go.`)}`, 'TRIGGER:-PT30M', 'END:VALARM',
       'END:VEVENT');
   }
@@ -39,7 +39,7 @@ export async function downloadPlanICS(plan) {
   const text = buildPlanICS(plan);
   const file = new File([text], 'hercules-kratos-plan.ics', { type: 'text/calendar' });
   if (navigator.canShare?.({ files: [file] })) {
-    try { await navigator.share({ files: [file], title: 'Kratos training plan' }); return; } catch (e) { if (e.name === 'AbortError') return; }
+    try { await navigator.share({ files: [file], title: 'Cratos training plan' }); return; } catch (e) { if (e.name === 'AbortError') return; }
   }
   const url = URL.createObjectURL(file);
   const a = Object.assign(document.createElement('a'), { href: url, download: file.name });

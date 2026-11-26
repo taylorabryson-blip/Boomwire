@@ -1,4 +1,4 @@
-/** My Schedule — the structured editor behind Kratos' plan. */
+/** My Schedule — the structured editor behind Cratos' plan. */
 import { h } from '../../components/dom.js';
 import { NavHeader, Section, List, FieldRow, ListRow, SegmentedControl, Stepper, Button, Card, EmptyState, TimeField } from '../../components/primitives.js';
 import { confirmSheet, openSheet, toast } from '../../components/overlays.js';
@@ -30,7 +30,7 @@ export function mount(root) {
     av.busy.forEach((b, i) => { const k = `${b.label}|${b.start}|${b.end}`; if (!groups.has(k)) groups.set(k, { ...b, idx: [] }); groups.get(k).idx.push(i); });
 
     return [
-      NavHeader({ title: 'My Schedule', back: { href: '#/kratos', label: 'Kratos' } }),
+      NavHeader({ title: 'My Schedule', back: { href: '#/kratos', label: 'Cratos' } }),
       List(
         FieldRow({ title: 'Wake up', iconName: 'sunrise', control: timeInput(av.wakeTime, (v) => set({ wakeTime: v })) }),
         FieldRow({ title: 'Bedtime', iconName: 'moon', control: timeInput(av.sleepTime, (v) => set({ sleepTime: v })) })),
@@ -45,7 +45,7 @@ export function mount(root) {
             iconName: 'calendar',
             title: `${g.label} · ${dayList(g.idx.map((i) => av.busy[i].day))}`,
             subtitle: fmtRange(toMin(g.start), toMin(g.end)),
-            onClick: async () => { if (!(await confirmSheet({ title: `Remove ${g.label}?`, message: 'Kratos will re-plan your week without it.', confirmLabel: 'Remove' }))) return; const busy = av.busy.filter((_, i) => !g.idx.includes(i)); await set({ busy }); toast('Removed', { iconName: 'trash' }); },
+            onClick: async () => { if (!(await confirmSheet({ title: `Remove ${g.label}?`, message: 'Cratos will re-plan your week without it.', confirmLabel: 'Remove' }))) return; const busy = av.busy.filter((_, i) => !g.idx.includes(i)); await set({ busy }); toast('Removed', { iconName: 'trash' }); },
             trailing: h('span', { class: 't-footnote c-3' }, 'Remove'), chevron: false })),
           ListRow({ iconName: 'plus', title: 'Add Commitment', subtitle: groups.size ? null : 'Work, school, practice — anything fixed', onClick: () => addBlockSheet(av) }))),
     ];

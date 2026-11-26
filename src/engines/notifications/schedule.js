@@ -1,6 +1,6 @@
 /**
  * Reminder schedule — pure. Turns the user's notification preferences plus
- * the Kratos plan into a flat list of weekly reminders:
+ * the Cratos plan into a flat list of weekly reminders:
  *   { id, kind, title, body, days: number[] (0=Mon…6=Sun), time: 'HH:MM', url }
  * The same list drives in-app reminders and the push server.
  */
@@ -24,7 +24,7 @@ export function buildReminders(prefs, plan) {
     for (const s of sessions) {
       const t = toMin(s.start) - (p.workout.leadMin ?? 30);
       out.push({ id: `workout-${s.day}`, kind: 'workout', days: [s.day], time: toHHMM(t < 0 ? 0 : t),
-        title: `${s.focus} at ${fmt12(toMin(s.start))}`, body: 'Kratos: shoes on. Your session is coming up.', url: '#/train' });
+        title: `${s.focus} at ${fmt12(toMin(s.start))}`, body: 'Cratos: shoes on. Your session is coming up.', url: '#/train' });
     }
   }
   if (p.water?.enabled) {

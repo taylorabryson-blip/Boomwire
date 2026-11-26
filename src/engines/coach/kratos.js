@@ -2,7 +2,7 @@
  * KRATOS — Hercules' coach. Named for the Greek personification of strength.
  *
  * A deterministic, offline dialogue engine: parse → update schedule →
- * respond. No network, no API key, no invented data: every number Kratos
+ * respond. No network, no API key, no invented data: every number Cratos
  * says comes from the user's records or the planner. Replies are short and
  * hype, but never shame the user's body.
  */
@@ -85,7 +85,7 @@ const hasSchedule = (p) => p.busy.length || p.free.length || p.daysOff.length ||
   || p.daysPerWeek != null || p.sessionMinutes != null || p.preference != null;
 
 export const GREETING = [
-  'I’m Kratos. Strength, in the flesh. I build your week around your actual life.',
+  'I’m Cratos. Strength, in the flesh. I build your week around your actual life.',
   'Tell me your schedule like you’d text a friend: “I work 9 to 5 Mon–Fri, wake up at 6:30, sleep at 11, want to lift 4 days.”',
   'I’ll find the best days and times, set your splits, and tell you when to eat around training.',
 ].join('\n\n');

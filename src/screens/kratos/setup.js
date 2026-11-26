@@ -1,7 +1,7 @@
 /**
- * Kratos setup wizard — the button-driven way to give Kratos your life.
+ * Cratos setup wizard — the button-driven way to give Cratos your life.
  * Nine steps, one screen each. On finish it saves the schedule + profile
- * and builds the plan immediately (so Kratos always has your data).
+ * and builds the plan immediately (so Cratos always has your data).
  */
 import { h } from '../../components/dom.js';
 import { icon } from '../../components/icons.js';
@@ -58,21 +58,21 @@ export async function mount(root) {
     List(FieldRow({ title: 'Starts', control: time(b.start, (v) => { b.start = v; }) }), FieldRow({ title: 'Ends', control: time(b.end, (v) => { b.end = v; }) })));
 
   const STEPS = [
-    { q: 'Do you work or go to school?', hint: 'Kratos plans around anything you can’t move.', ok: () => st.commit, view: () => h('div', { class: 'choice-grid' },
+    { q: 'Do you work or go to school?', hint: 'Cratos plans around anything you can’t move.', ok: () => st.commit, view: () => h('div', { class: 'choice-grid' },
       choice('Work', 'Job or shifts', st.commit === 'work', () => { st.commit = 'work'; }), choice('School', 'Classes', st.commit === 'school', () => { st.commit = 'school'; }),
       choice('Both', 'Work and school', st.commit === 'both', () => { st.commit = 'both'; }), choice('Neither', 'My days are open', st.commit === 'none', () => { st.commit = 'none'; })) },
     { q: 'When are you busy?', hint: 'Tap the days, then set the hours.', skip: () => st.commit === 'none', ok: () => true, view: () => h('div', { class: 'stack' },
       (st.commit === 'work' || st.commit === 'both') && blockEditor(st.work, 'Work'),
       (st.commit === 'school' || st.commit === 'both') && blockEditor(st.school, 'School')) },
-    { q: 'When do you wake up and go to bed?', hint: 'Kratos keeps 30 minutes after waking and 90 before bed free.', ok: () => true, view: () => List(
+    { q: 'When do you wake up and go to bed?', hint: 'Cratos keeps 30 minutes after waking and 90 before bed free.', ok: () => true, view: () => List(
       FieldRow({ title: 'Wake up', iconName: 'sunrise', control: time(st.wake, (v) => { st.wake = v; }) }),
       FieldRow({ title: 'Bedtime', iconName: 'moon', control: time(st.sleep, (v) => { st.sleep = v; }) })) },
     { q: 'How often can you train?', hint: 'Be honest. Consistency beats ambition.', ok: () => true, view: () => h('div', { class: 'stack' },
       List(FieldRow({ title: 'Days per week', control: Stepper({ value: st.days, min: 1, max: 6, onChange: (v) => { st.days = v; } }) })),
       h('div', { class: 'chips', style: { justifyContent: 'space-between' } }, [30, 45, 60, 75, 90].map((m) => h('button', { class: 'chip', type: 'button', style: { flex: 1, padding: 0 }, 'aria-pressed': String(st.minutes === m), onClick: () => { st.minutes = m; haptic(); render(); } }, `${m} min`)))) },
-    { q: 'When do you like to train?', hint: 'Kratos picks the best slot that fits.', ok: () => st.pref, view: () => h('div', { class: 'choice-grid' },
+    { q: 'When do you like to train?', hint: 'Cratos picks the best slot that fits.', ok: () => st.pref, view: () => h('div', { class: 'choice-grid' },
       choice('Morning', 'Before the day starts', st.pref === 'morning', () => { st.pref = 'morning'; }), choice('Midday', 'Around lunch', st.pref === 'midday', () => { st.pref = 'midday'; }),
-      choice('Evening', 'After work or school', st.pref === 'evening', () => { st.pref = 'evening'; }), choice('Whenever', 'Kratos decides', st.pref === 'any', () => { st.pref = 'any'; })) },
+      choice('Evening', 'After work or school', st.pref === 'evening', () => { st.pref = 'evening'; }), choice('Whenever', 'Cratos decides', st.pref === 'any', () => { st.pref = 'any'; })) },
     { q: 'Where do you train?', hint: 'Fine-tune exact equipment anytime in Profile → Gear.', ok: () => st.env, view: () => h('div', { class: 'stack' },
       h('div', { class: 'choice-grid' }, ENVIRONMENTS.map((e) => choice(e.label, `${e.gear.length} items`, st.env === e.id, () => { st.env = e.id; }))),
       h('div', { class: 'choice-grid' }, ['beginner', 'intermediate', 'advanced'].map((x) => choice(x[0].toUpperCase() + x.slice(1), { beginner: '< 1 year', intermediate: '1–3 years', advanced: '3+ years' }[x], st.experience === x, () => { st.experience = x; })))) },
@@ -128,7 +128,7 @@ export async function mount(root) {
     navigate('#/kratos', { replace: true });
   }
 
-  root.append(NavHeader({ title: 'Setup', back: { href: '#/kratos', label: 'Kratos' } }), dots, body, nav);
+  root.append(NavHeader({ title: 'Setup', back: { href: '#/kratos', label: 'Cratos' } }), dots, body, nav);
   document.body.classList.add('focus-flow');
   render();
   return () => document.body.classList.remove('focus-flow');

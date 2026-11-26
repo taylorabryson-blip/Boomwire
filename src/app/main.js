@@ -27,11 +27,14 @@ async function boot() {
   const tabbar = createTabBar();
   const topbar = createTopbar();
   app.replaceChildren(topbar.el, view, tabbar.el);
+  try { const [{ getProfile }, { registerCustomGear }] = await Promise.all([import('../services/storage/repository.js'), import('../data/exercises/gear.js')]); registerCustomGear((await getProfile()).customGear?.items ?? []); } catch { /* first run */ }
   await startRouter(view, tabbar, topbar);
   registerServiceWorker();
   startWorkoutActivity();
   startReminderClock();
+  import('../services/widgets.js').then((m) => m.startWidgetSync()).catch(() => {});
   installTouchEffects();
+  import('../screens/settings/personalization.js').then(async (m) => m.applyAppearance(m.appearancePrefs(await (await import('../services/storage/repository.js')).getSettings()))).catch(() => {});
   window.__herculesBooted = true;
   announceUpdate();
 }

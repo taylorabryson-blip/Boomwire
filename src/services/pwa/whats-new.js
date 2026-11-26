@@ -11,15 +11,25 @@ import * as repo from '../storage/repository.js';
 import { APP_VERSION } from '../../app/version.js';
 
 export const CHANGELOG = [
+  { version: '0.7.0', items: [
+    'Say what you ate: tap the mic, say “two eggs and a banana”, log it all in one tap',
+    'One-tap “same as yesterday”, your usual foods, and suggestions to fill your remaining protein',
+    'Daily water goal now calculated from your body weight (more on training days)',
+    'Talk to Cratos by voice; he answers out loud in a deep voice (or male/female in Personalization)',
+    'Real iPhone alarms via Shortcuts, and Home + Lock Screen widgets via Scriptable',
+    '187 pieces of equipment, smart home gyms (Tonal, Bowflex…), and add your own',
+    'iOS-style notification banners, swipe from the left edge to go back',
+    'Coach renamed Cratos (Latin spelling); header overlap fixed',
+  ] },
   { version: '0.6.0', items: [
     'Nutrition: 7,283 USDA-verified foods, brand search (Open Food Facts), barcode lookup, meals, macros and personalized targets',
     'Saved meals, custom foods, recent & frequent foods, weekly summaries',
-    'Kratos is buttons-first: guided setup, weekly plan, start workouts in one tap',
+    'Cratos is buttons-first: guided setup, weekly plan, start workouts in one tap',
     'Full gear catalog (78 items) and 110 exercises',
     'Recovery check-ins: sleep, soreness, energy, readiness',
     'Week-over-week comparisons in Progress',
     'Liquid Glass touch effects on iPhone, Material design on Android',
-    'Kratos setup now asks your goal and body stats, so calorie and protein targets work right away',
+    'Cratos setup now asks your goal and body stats, so calorie and protein targets work right away',
     'Every screen redesigned to fit on one screen, Apple-style',
   ] },
   { version: '0.5.0', items: ['Real human anatomy model from BodyParts3D scan data'] },
@@ -49,6 +59,6 @@ export async function announceUpdate() {
 export function watchForUpdates(reg) {
   reg.addEventListener('updatefound', () => {
     if (!navigator.serviceWorker.controller) return;
-    island.live({ id: 'update', icon: 'download', compactText: 'Updating…', title: 'Downloading update', subtitle: 'Hercules will refresh in a moment' });
+    island.flash({ icon: 'download', title: 'Downloading update', subtitle: 'Hercules will refresh in a moment', duration: 5000 });
   });
 }

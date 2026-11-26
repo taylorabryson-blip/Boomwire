@@ -1,7 +1,7 @@
 /**
- * Natural-language schedule parser for Kratos. Deterministic and offline:
+ * Natural-language schedule parser for Cratos. Deterministic and offline:
  * it recognises days, times, time ranges and a fixed vocabulary of intents.
- * Anything it assumes is returned in `assumptions` so Kratos can say it out
+ * Anything it assumes is returned in `assumptions` so Cratos can say it out
  * loud and the user can correct it.
  *
  * Days are 0–6 = Monday–Sunday. Times are minutes after midnight.
