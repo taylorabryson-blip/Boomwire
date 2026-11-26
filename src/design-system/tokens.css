@@ -1,0 +1,84 @@
+/* ==========================================================================
+   HERCULES DESIGN TOKENS
+   Single source of truth for color, type, spacing, radius, motion and layout.
+   Components must reference tokens, never raw values.
+   ========================================================================== */
+:root {
+  color-scheme: dark;
+
+  /* ---- Color: surfaces ------------------------------------------------ */
+  --c-bg: #000000;
+  --c-surface-1: #0e0e10;      /* cards, grouped lists */
+  --c-surface-2: #1b1b1e;      /* controls, chips, pressed rows */
+  --c-surface-3: #2a2a2e;      /* selected segment, raised controls */
+  --c-separator: rgba(255, 255, 255, 0.08);
+  --c-border: rgba(255, 255, 255, 0.14);
+
+  /* ---- Color: text ---------------------------------------------------- */
+  --c-text-1: #ffffff;
+  --c-text-2: #9a9aa1;
+  --c-text-3: #5d5d63;
+  --c-text-inverse: #000000;
+
+  /* ---- Color: functional (used sparingly) ----------------------------- */
+  --c-accent: #ffffff;          /* primary actions are white-on-black */
+  --c-focus: #0a84ff;           /* keyboard focus ring only */
+  --c-danger: #ff453a;
+
+  /* ---- Color: data series (monochrome ramp) --------------------------- */
+  --c-series-1: #ffffff;
+  --c-series-2: #b6b6bc;
+  --c-series-3: #7a7a80;
+  --c-series-4: #46464b;
+  --c-track: #232326;           /* empty part of rings/bars */
+
+  /* ---- Typography ----------------------------------------------------- */
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+               "Inter", "Helvetica Neue", system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+
+  --fs-large-title: 34px;  --lh-large-title: 41px;
+  --fs-title-1: 28px;      --lh-title-1: 34px;
+  --fs-title-2: 22px;      --lh-title-2: 28px;
+  --fs-title-3: 20px;      --lh-title-3: 25px;
+  --fs-headline: 17px;     --lh-headline: 22px;
+  --fs-body: 17px;         --lh-body: 22px;
+  --fs-callout: 16px;      --lh-callout: 21px;
+  --fs-subhead: 15px;      --lh-subhead: 20px;
+  --fs-footnote: 13px;     --lh-footnote: 18px;
+  --fs-caption: 12px;      --lh-caption: 16px;
+  --fs-micro: 10px;        --lh-micro: 12px;
+
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+
+  /* ---- Spacing (4pt grid) --------------------------------------------- */
+  --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px; --sp-4: 16px;
+  --sp-5: 20px; --sp-6: 24px; --sp-8: 32px; --sp-10: 40px; --sp-12: 48px;
+
+  /* ---- Radius --------------------------------------------------------- */
+  --r-xs: 6px; --r-sm: 10px; --r-md: 12px; --r-lg: 16px; --r-xl: 22px; --r-pill: 999px;
+
+  /* ---- Motion --------------------------------------------------------- */
+  --ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-sheet: cubic-bezier(0.32, 0.72, 0, 1);
+  --dur-fast: 140ms;
+  --dur-base: 240ms;
+  --dur-slow: 420ms;
+
+  /* ---- Layout --------------------------------------------------------- */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --gutter: 16px;
+  --tabbar-h: 52px;
+  --content-max: 680px;
+  --hairline: 0.5px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --dur-fast: 0ms; --dur-base: 0ms; --dur-slow: 0ms; }
+}
