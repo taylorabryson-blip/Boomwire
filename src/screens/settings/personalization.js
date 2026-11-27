@@ -45,7 +45,7 @@ export function mount(root) {
       !canSpeak() && h('p', { class: 'section__footer' }, 'This browser can’t speak aloud.'),
       List(
         FieldRow({ title: 'Haptics', control: Switch({ checked: hapticsEnabled(), label: 'Haptics', onChange: (on) => { setHapticsEnabled(on); haptic(); } }) }),
-        FieldRow({ title: 'Liquid Glass touches', control: Switch({ checked: a.glass, label: 'Liquid Glass touches', onChange: (on) => setLook({ glass: on }) }) }),
+        FieldRow({ title: 'Liquid Glass lensing', control: Switch({ checked: a.glass, label: 'Liquid Glass lensing', onChange: (on) => setLook({ glass: on }) }) }),
         FieldRow({ title: 'Reduce motion', control: Switch({ checked: a.reduceMotion, label: 'Reduce motion', onChange: (on) => setLook({ reduceMotion: on }) }) })),
     ];
   });

@@ -11,6 +11,11 @@ import * as repo from '../storage/repository.js';
 import { APP_VERSION } from '../../app/version.js';
 
 export const CHANGELOG = [
+  { version: '0.8.2', items: [
+    'Liquid Glass is now clear glass with lensing: no frosting. Content behind the tab bar bends at the edges and splits into red, green and blue',
+    'Pressing a button turns it into a clear glass lens that magnifies with rainbow edges',
+    'Can be turned off in Settings → Appearance & Personalization → Liquid Glass lensing',
+  ] },
   { version: '0.8.1', items: [
     'Liquid Glass press: buttons swell into a glass lens, bend light at the rim, and a highlight follows your finger',
     'Move any workout: pick a new day and time, this week or every week. Moving onto a booked day swaps the two',

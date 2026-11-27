@@ -37,6 +37,7 @@ async function boot() {
   startReminderClock();
   import('../services/widgets.js').then((m) => m.startWidgetSync()).catch(() => {});
   installTouchEffects();
+  import('../components/lensing.js').then((m) => m.installLensing(view)).catch(() => {});
   import('../screens/settings/personalization.js').then(async (m) => m.applyAppearance(m.appearancePrefs(await (await import('../services/storage/repository.js')).getSettings()))).catch(() => {});
   window.__herculesBooted = true;
   announceUpdate();

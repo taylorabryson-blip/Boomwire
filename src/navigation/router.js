@@ -47,7 +47,7 @@ export function startRouter(view, tabbar, topbar) {
     lastDepth = route.depth;
     document.documentElement.dataset.nav = dir;
     const skip = window.__herculesSkipNavAnim; window.__herculesSkipNavAnim = false;
-    if (!skip && document.startViewTransition && dir !== 'none' && !matchMedia('(prefers-reduced-motion: reduce)').matches && document.documentElement.dataset.motion !== 'reduce') {
+    if (!skip && document.startViewTransition && dir !== 'none' && dir !== 'tab' && !matchMedia('(prefers-reduced-motion: reduce)').matches && document.documentElement.dataset.motion !== 'reduce') {
       // Keep the floating bars still while pages move. The names are applied only for the
       // duration of the transition: a permanent view-transition-name would make the glass
       // a backdrop root and stop it from seeing the page behind it.
@@ -56,7 +56,8 @@ export function startRouter(view, tabbar, topbar) {
       await route.load(); // module ready before the snapshot, so the animation starts immediately
       const vt = document.startViewTransition(() => swap(route, params, my));
       await vt.updateCallbackDone.catch(() => {});
-      vt.finished.finally(() => { tabbar.el.style.viewTransitionName = ''; topbar.el.style.viewTransitionName = ''; document.documentElement.classList.remove('vt-running'); });
+      vt.ready.catch(() => {});
+      vt.finished.catch(() => {}).finally(() => { tabbar.el.style.viewTransitionName = ''; topbar.el.style.viewTransitionName = ''; document.documentElement.classList.remove('vt-running'); });
     } else {
       await swap(route, params, my);
       view.firstElementChild?.classList.add(dir === 'tab' ? (swipeDir === 'next' ? 'screen-in-right' : 'screen-in-left') : 'screen-in');

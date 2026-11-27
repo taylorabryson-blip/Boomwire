@@ -31,7 +31,7 @@ Push to GitHub → Settings → Pages → Source: `main` / root. Hash routing
 | Area | Delivered |
 |---|---|
 | Navigation | Home · Train · Cratos · Nutrition · Progress (Train hidden in diet-only mode). Swipe between tabs; iOS push/pop transitions. Every screen fits one iPhone screen (Library and chat excepted) |
-| iOS feel | Liquid Glass tab bar (true SVG refraction in Chromium; rim-lit clear glass in Safari), iOS notification banners (swipe up to dismiss), "now playing"-style bar for live workouts/rest timers, collapsing large titles, card sheets with drag-to-dismiss, edge-swipe back, Liquid Glass touches, haptics. Material 3 on Android |
+| iOS feel | Clear Liquid Glass with lensing + chromatic aberration in Safari and Chrome (the page is displaced under each glass shape with per-channel SVG displacement, see src/components/lensing.js), iOS notification banners (swipe up to dismiss), "now playing"-style bar for live workouts/rest timers, collapsing large titles, card sheets with drag-to-dismiss, edge-swipe back, Liquid Glass touches, haptics. Material 3 on Android |
 | Cratos (coach) | Button-first dashboard + 9-step setup (schedule, goal, body stats → plan and targets). Voice: talk to him (Web Speech / keyboard dictation), he answers aloud in a deep, male or female voice |
 | Nutrition | 7,283 USDA foods + Open Food Facts brands/barcodes. Say what you ate (“2 eggs and a banana”) → logged in one tap. Same-as-yesterday, your usuals, “fill your macros” suggestions. Auto calorie, protein and water targets from your body |
 | Training | 110 exercises, 187 pieces of equipment in 12 categories (incl. Tonal/Bowflex-style equivalents), custom equipment, logger, PRs, templates |

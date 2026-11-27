@@ -479,23 +479,18 @@ html[data-motion="reduce"] *, html[data-motion="reduce"] *::before, html[data-mo
    through a curved edge; faint chromatic fringe. On Chromium a per-element
    displacement filter (touch-effects.js) adds true refraction of the backdrop. */
 html:not([data-platform="android"]) .lg {
+  /* Clear Liquid Glass: no blur. The content underneath is bent by lensing.js;
+     the material itself is just a whisper of tint, a specular rim and a shadow. */
   isolation: isolate;
-  background: rgba(255,255,255,.035) !important;
-  -webkit-backdrop-filter: blur(6px) saturate(1.8) brightness(1.05) !important;
-  backdrop-filter: blur(6px) saturate(1.8) brightness(1.05) !important;
+  background: rgba(255,255,255,.025) !important;
+  -webkit-backdrop-filter: saturate(1.4) brightness(1.04) !important;
+  backdrop-filter: saturate(1.4) brightness(1.04) !important;
   border: 0 !important;
   box-shadow:
-    inset 0 0 0 .5px rgba(255,255,255,.16),
-    inset 1px 1px 0 -.25px rgba(255,255,255,.55),
-    inset -1px -1px 0 -.25px rgba(255,255,255,.22),
-    inset 0 -8px 14px -10px rgba(0,0,0,.35),
-    inset 2px 0 3px -2px rgba(140,190,255,.22),
-    inset -2px 0 3px -2px rgba(255,150,130,.18),
-    0 8px 26px rgba(0,0,0,.32), 0 1px 2px rgba(0,0,0,.2) !important;
-}
-html:not([data-platform="android"]) .lg.lg--refract {
-  -webkit-backdrop-filter: var(--lg-filter) !important;
-  backdrop-filter: var(--lg-filter) !important;
+    inset 0 0 0 .5px rgba(255,255,255,.22),
+    inset 1px 1px 0 -.25px rgba(255,255,255,.6),
+    inset -1px -1px 0 -.25px rgba(255,255,255,.25),
+    0 10px 30px rgba(0,0,0,.35), 0 1px 2px rgba(0,0,0,.25) !important;
 }
 html:not([data-platform="android"]) .lg::before { /* specular rim: light catches the top-left and bottom-right corners */
   content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none; z-index: -1;
@@ -541,24 +536,14 @@ button.week-day { font: inherit; color: inherit; cursor: pointer; }
 .day-picker__d i { position: absolute; bottom: 6px; width: 4px; height: 4px; border-radius: 50%; background: #30d158; }
 .move-note { font-size: var(--fs-footnote); color: var(--c-text-2); line-height: 1.35; display: flex; flex-direction: column; gap: 4px; min-height: 1.3em; }
 .move-note__warn { color: #ff9f0a; }
-/* ===== Liquid Glass press lens ===== */
-.lg-press { transform: translate(var(--sx, 0), var(--sy, 0)) scale(var(--lg-grow, 1.06)) !important; transition: transform .34s cubic-bezier(.2,1.45,.35,1), filter .2s !important; z-index: 6; }
-.lg-release { transition: transform .55s cubic-bezier(.2,1.8,.3,1) !important; }
-.lg-light {
-  position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 5; opacity: 0;
-  transition: opacity .25s ease-out;
-  background:
-    radial-gradient(circle at var(--px, 50%) var(--py, 50%), rgba(255,255,255,.42), rgba(255,255,255,.10) 32%, rgba(255,255,255,0) 62%),
-    linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,0) 45%);
-  box-shadow:
-    inset 0 0 0 .75px rgba(255,255,255,.55),
-    inset 1.5px 1.5px 1px -1px rgba(255,255,255,.95),
-    inset -1.5px -1.5px 1px -1px rgba(255,255,255,.45),
-    inset 3px 0 5px -3px rgba(140,190,255,.45),
-    inset -3px 0 5px -3px rgba(255,150,130,.4),
-    0 10px 28px rgba(0,0,0,.45);
-}
-.lg-press > .lg-light { opacity: 1; transition-duration: .12s; }
-.btn--primary > .lg-light { background: radial-gradient(circle at var(--px, 50%) var(--py, 50%), rgba(255,255,255,.9), rgba(255,255,255,0) 60%), linear-gradient(180deg, rgba(0,0,0,0) 55%, rgba(0,0,0,.08)); }
+/* ===== Liquid Glass press: swell into clear glass (lensing.js bends what's inside) ===== */
+.lg-press { transform: scale(var(--lg-grow, 1.06)) !important; transition: transform .34s cubic-bezier(.2,1.45,.35,1), background-color .18s, box-shadow .18s !important; z-index: 6;
+  background-color: rgba(255,255,255,.03) !important;
+  box-shadow: inset 0 0 0 .75px rgba(255,255,255,.5), inset 1.5px 1.5px 1px -1px rgba(255,255,255,.9), inset -1.5px -1.5px 1px -1px rgba(255,255,255,.45), 0 12px 30px rgba(0,0,0,.45) !important; }
+.btn--primary.lg-press { background-color: rgba(255,255,255,.88) !important; }
+.lg-release { transition: transform .55s cubic-bezier(.2,1.8,.3,1), background-color .3s, box-shadow .3s !important; }
 /* Sheets: nearly opaque so nothing behind ever competes with sheet content */
 html:not([data-platform="android"]) .sheet { background: rgba(28,28,30,.97); }
+/* Clear glass needs legible content on any background (Apple adapts shadow under glyphs) */
+html:not([data-platform="android"]) .lg .tabbar__item, html:not([data-platform="android"]) .livebar, html:not([data-platform="android"]) .banner { text-shadow: 0 1px 5px rgba(0,0,0,.6); }
+html:not([data-platform="android"]) .lg .tabbar__item svg { filter: drop-shadow(0 1px 3px rgba(0,0,0,.6)); }
