@@ -28,7 +28,7 @@ export function mount(root) {
         } catch (e) { toast('Couldn’t turn on', { iconName: 'info', subtitle: e.message, duration: 6000 }); }
         refresh();
       } }) })),
-      !on && h('p', { class: 'section__footer' }, cap.state === 'needs-home-screen' ? 'iPhone: Share → Add to Home Screen first.' : cap.text || 'Reminders arrive even when Hercules is closed.'),
+      !on && h('p', { class: 'section__footer' }, cap.state === 'needs-home-screen' ? 'iPhone: Share → Add to Home Screen first.' : cap.text || 'Reminders and rest timers arrive even when Hercules is closed or your phone is locked.'),
       List(
         FieldRow({ title: 'Workouts', control: prefs.workout.enabled
           ? h('span', { class: 'row', style: { gap: '10px' } }, Select({ value: prefs.workout.leadMin, placeholder: '30 min', onChange: (v) => set('workout', { leadMin: Number(v) || 30 }), options: [10, 15, 30, 45, 60, 90].map((m) => ({ value: m, label: `${m} min before` })) }), Switch({ checked: true, label: 'Workout reminders', onChange: (v) => set('workout', { enabled: v }) }))

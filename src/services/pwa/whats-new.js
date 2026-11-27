@@ -11,6 +11,13 @@ import * as repo from '../storage/repository.js';
 import { APP_VERSION } from '../../app/version.js';
 
 export const CHANGELOG = [
+  { version: '0.9.0', items: [
+    'Rest timers and reminders now reach you with the app closed or your phone locked (turn on with one tap when asked)',
+    '376 exercises, up from 110: kettlebell, landmine, rings and TRX, sliders, plyometrics, Olympic lifts, strongman, boxing and mobility',
+    'Smarter Cratos plans: uses your focus areas, adds power work for Athletic and finishers for Lean, and never repeats an exercise in the same week',
+    'Main lifts stay put for 4 weeks so you can progress; accessories rotate every week',
+    'New Workouts page: 12 ready-made workouts built from your gear, any length from 20 to 75 minutes, with Shuffle',
+  ] },
   { version: '0.8.3', items: [
     'Swipe between tabs like iOS: the next page slides in with your finger, already loaded',
     'Tapping a tab is instant; page transitions are faster',

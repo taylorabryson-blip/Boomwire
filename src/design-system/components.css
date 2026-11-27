@@ -584,3 +584,6 @@ body.has-live .capsule { bottom: calc(var(--tabbar-gap) + var(--tabbar-h) + 76px
 
 /* Empty state followed by its call-to-action inside a card: never touching. */
 .card > .empty + .btn { margin-top: var(--sp-4); }
+.workout-tiles { grid-auto-rows: 1fr; }
+.workout-tiles .nav-tile { gap: 6px; padding: 12px; min-height: 64px; align-content: center; }
+.workout-tiles .nav-tile__title { line-height: 1.15; }

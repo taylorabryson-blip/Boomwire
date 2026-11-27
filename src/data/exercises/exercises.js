@@ -10,20 +10,22 @@
  * loadType: 'external' (weight is the load) or 'bodyweight' (weight = added load).
  */
 
+import { MORE_EXERCISES, BASE_TAGS } from './more.js';
+
 const X = (id, name, o) => ({ id, name, metric: 'reps', loadType: 'external', variations: [], ...o });
 
 export const EQUIPMENT_LABELS = {
   barbell: 'Barbell', dumbbell: 'Dumbbell', machine: 'Machine', cable: 'Cable',
-  bodyweight: 'Bodyweight', kettlebell: 'Kettlebell', band: 'Band', bench: 'Bench',
+  bodyweight: 'Bodyweight', kettlebell: 'Kettlebell', band: 'Band', bench: 'Bench', other: 'Other',
 };
 
 export const PATTERN_LABELS = {
   horizontal_push: 'Horizontal push', vertical_push: 'Vertical push', horizontal_pull: 'Horizontal pull',
   vertical_pull: 'Vertical pull', squat: 'Squat', hinge: 'Hip hinge', lunge: 'Lunge', isolation: 'Isolation',
-  core: 'Core', carry: 'Carry / conditioning', calf: 'Calf raise',
+  core: 'Core', carry: 'Carry / conditioning', calf: 'Calf raise', power: 'Power / plyometric', mobility: 'Mobility',
 };
 
-export const EXERCISES = [
+const BASE_EXERCISES = [
   // ---- Chest -----------------------------------------------------------
   X('bench_press', 'Barbell Bench Press', { category: 'compound', equipment: 'barbell', pattern: 'horizontal_push', difficulty: 'intermediate',
     primary: ['pectoralis_major'], secondary: ['deltoid_anterior', 'triceps_brachii'],
@@ -431,6 +433,8 @@ export const EXERCISES = [
     primary: ['latissimus_dorsi', 'deltoid_anterior'], secondary: ['triceps_brachii', 'rectus_abdominis', 'quadriceps'],
     instructions: ['Warm up with easy laps.', 'Swim continuous laps or intervals.', 'Log the time.'], variations: [] }),
 ];
+
+export const EXERCISES = [...BASE_EXERCISES, ...MORE_EXERCISES].map((e) => ({ ...e, tags: [...new Set([...(e.tags ?? []), ...(BASE_TAGS[e.id] ?? [])])] }));
 
 export const EXERCISE_BY_ID = Object.fromEntries(EXERCISES.map((e) => [e.id, e]));
 export const exerciseName = (id) => EXERCISE_BY_ID[id]?.name ?? 'Unknown exercise';

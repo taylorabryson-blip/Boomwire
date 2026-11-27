@@ -6,7 +6,7 @@ A personal fitness and physical-performance operating system, built as an
 iPhone-first Progressive Web App with an architecture ready for a future
 native SwiftUI layer.
 
-**Status: v0.5.0 — Phases 1–4 complete + Kratos coach + push reminders.**
+**Status: v0.9.0 — server push (reminders + rest timers with the phone locked), 376-exercise library, data-driven Cratos planner.**
 
 ## Run it
 
@@ -34,7 +34,7 @@ Push to GitHub → Settings → Pages → Source: `main` / root. Hash routing
 | iOS feel | Clear (never frosted) glass with a light press swell, live page-view swipe between tabs (neighbouring tabs are pre-rendered so you see the next page as you drag), instant tab taps, iOS-style HUD confirmations and action capsules (Undo/View), "now playing"-style bar for live workouts/rest timers, collapsing large titles, card sheets with drag-to-dismiss, edge-swipe back, haptics. Material 3 on Android |
 | Cratos (coach) | Button-first dashboard + 9-step setup (schedule, goal, body stats → plan and targets). Voice: talk to him (Web Speech / keyboard dictation), he answers aloud in a deep, male or female voice |
 | Nutrition | 7,283 USDA foods + Open Food Facts brands/barcodes. Say what you ate (“2 eggs and a banana”) → logged in one tap. Same-as-yesterday, your usuals, “fill your macros” suggestions. Auto calorie, protein and water targets from your body |
-| Training | 110 exercises, 187 pieces of equipment in 12 categories (incl. Tonal/Bowflex-style equivalents), custom equipment, logger, PRs, templates |
+| Training | 376 exercises (power/plyo, Olympic, kettlebell, rings/TRX, strongman, combat, mobility), 12 ready-made workouts generated from your gear, 187 pieces of equipment in 12 categories (incl. Tonal/Bowflex-style equivalents), custom equipment, logger, PRs, templates |
 | Anatomy | Real human anatomy (BodyParts3D) with workload heat map |
 | Phone integration | Web Push reminders (app closed), real Clock alarms via the “Hercules Alarms” shortcut, Home + Lock Screen widgets via Scriptable (snapshot relay: `supabase/functions/hercules-widget`), .ics calendar export |
 

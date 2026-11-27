@@ -35,6 +35,11 @@ async function boot() {
   registerServiceWorker();
   startWorkoutActivity();
   startReminderClock();
+  // Once there's a plan, offer push so workout reminders reach a locked phone.
+  setTimeout(async () => {
+    const plan = await import('../services/coach.js').then((m) => m.getPlan()).catch(() => null);
+    if (plan?.sessions?.length) import('../services/notifications/push.js').then((m) => m.offerPush('Let Cratos remind you before workouts'));
+  }, 5000);
   import('../services/widgets.js').then((m) => m.startWidgetSync()).catch(() => {});
   installTouchEffects();
   import('../screens/settings/personalization.js').then(async (m) => m.applyAppearance(m.appearancePrefs(await (await import('../services/storage/repository.js')).getSettings()))).catch(() => {});

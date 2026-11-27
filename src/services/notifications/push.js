@@ -95,3 +95,44 @@ export async function sendTestPush() {
   const r = await call({ action: 'test', deviceId: d.deviceId, secret: d.secret });
   if (!r.ok) throw new Error('The push service didn’t accept the test. Try turning notifications off and on.');
 }
+
+/* ── One-off pushes (rest timer etc.) — delivered by the server even when the
+   app is closed or the phone is locked. keepalive lets the request finish
+   while iOS is suspending the page. Silent no-op when push is off. */
+const canPush = () => pushEnabledHere() && pushSupported() && Notification.permission === 'granted';
+
+export function schedulePush(key, fireAt, { title, body = '', url = '#/home' } = {}) {
+  if (!canPush()) return;
+  const d = device();
+  fetch(PUSH_ENDPOINT, { method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'schedule', deviceId: d.deviceId, secret: d.secret, key, fireAt: new Date(fireAt).toISOString(), title, body, url }) })
+    .catch(() => {});
+}
+
+export function cancelPush(key) {
+  if (!canPush()) return;
+  const d = device();
+  fetch(PUSH_ENDPOINT, { method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'cancel', deviceId: d.deviceId, secret: d.secret, key }) }).catch(() => {});
+}
+
+/** One-tap offer to turn notifications on, shown at moments they matter.
+ *  Asks at most once every 3 days, never when already on / blocked. */
+const OFFER_KEY = 'hercules:push-offer';
+export async function offerPush(reason) {
+  if (pushEnabledHere()) return;
+  const cap = capability();
+  if (cap.state === 'denied' || cap.state === 'unsupported') return;
+  try { if (Date.now() - Number(localStorage.getItem(OFFER_KEY) || 0) < 3 * 86400_000) return; } catch { return; }
+  localStorage.setItem(OFFER_KEY, String(Date.now()));
+  const { island } = await import('../../components/island.js');
+  if (cap.state === 'needs-home-screen') {
+    island.flash({ icon: 'bell', title: 'Get alerts with the app closed', subtitle: 'Share → Add to Home Screen', actionLabel: 'OK', onAction: () => {}, duration: 8000 });
+    return;
+  }
+  island.flash({ icon: 'bell', title: reason, subtitle: 'Even with your phone locked', actionLabel: 'Turn On', duration: 8000,
+    onAction: async () => {
+      try { await enablePush(); island.flash({ icon: 'check', title: 'Notifications on' }); }
+      catch (e) { island.flash({ icon: 'info', title: 'Couldn’t turn on', subtitle: e.message, actionLabel: 'OK', onAction: () => {}, duration: 6000 }); }
+    } });
+}

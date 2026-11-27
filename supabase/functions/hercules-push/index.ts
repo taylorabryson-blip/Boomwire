@@ -3,7 +3,10 @@
 //  POST { action: 'register', deviceId, secret, subscription, timezone, reminders }
 //  POST { action: 'unregister', deviceId, secret }
 //  POST { action: 'test', deviceId, secret }
+//  POST { action: 'schedule', deviceId, secret, key, fireAt, title, body, url } one-off (rest timer etc.)
+//  POST { action: 'cancel', deviceId, secret, key }
 //  POST { action: 'tick' } + header x-cron-secret               (pg_cron, every minute)
+//  POST { action: 'oneshots' } + header x-cron-secret           (pg_cron, every 5 s when something is due)
 // Devices authenticate with a random per-device secret (only its SHA-256 is stored).
 import webpush from "npm:web-push@3.6.7";
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
@@ -115,6 +118,27 @@ async function tick() {
   return sent;
 }
 
+async function oneshots() {
+  const { data: due, error } = await db.from("hercules_push_oneshots")
+    .select("device_id,key,fire_at,payload,hercules_push_devices(subscription)")
+    .lte("fire_at", new Date(Date.now() + 2000).toISOString()).limit(200);
+  if (error) throw error;
+  let sent = 0;
+  for (const r of due ?? []) {
+    // Claim the row first so overlapping ticks never double-send.
+    const { data: claimed } = await db.from("hercules_push_oneshots").delete()
+      .eq("device_id", r.device_id).eq("key", r.key).eq("fire_at", r.fire_at).select("key");
+    if (!claimed?.length) continue;
+    if (Date.now() - Date.parse(r.fire_at) > 10 * 60_000) continue; // stale (device offline / server down)
+    const sub = (r as any).hercules_push_devices?.subscription;
+    if (!sub) continue;
+    const res = await send(sub, r.payload);
+    if (res === "gone") await db.from("hercules_push_devices").delete().eq("device_id", r.device_id);
+    if (res === "ok") sent++;
+  }
+  return sent;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
   if (req.method !== "POST") return json({ error: "method not allowed" }, 405);
@@ -128,6 +152,32 @@ Deno.serve(async (req) => {
       case "tick": {
         if (req.headers.get("x-cron-secret") !== c.cron_secret) return json({ error: "forbidden" }, 403);
         return json({ sent: await tick() });
+      }
+      case "oneshots": {
+        if (req.headers.get("x-cron-secret") !== c.cron_secret) return json({ error: "forbidden" }, 403);
+        return json({ sent: await oneshots() });
+      }
+      case "schedule": {
+        const a = await authDevice(body.deviceId, body.secret);
+        if (a.error || !a.row) return json({ error: a.error ?? "not registered" }, 403);
+        const key = String(body.key ?? "");
+        const at = Date.parse(body.fireAt);
+        if (!/^[a-z0-9:_-]{1,40}$/i.test(key) || !Number.isFinite(at) || at < Date.now() - 60_000 || at > Date.now() + 7 * 86400_000) return json({ error: "invalid schedule" }, 400);
+        const { count } = await db.from("hercules_push_oneshots").select("key", { count: "exact", head: true }).eq("device_id", body.deviceId);
+        if ((count ?? 0) >= 50) return json({ error: "too many" }, 429);
+        const payload = {
+          title: String(body.title ?? "Hercules").slice(0, 80), body: String(body.body ?? "").slice(0, 160),
+          url: typeof body.url === "string" && body.url.startsWith("#/") ? body.url.slice(0, 60) : "#/home", tag: key,
+        };
+        const { error } = await db.from("hercules_push_oneshots").upsert({ device_id: body.deviceId, key, fire_at: new Date(at).toISOString(), payload });
+        if (error) throw error;
+        return json({ ok: true });
+      }
+      case "cancel": {
+        const a = await authDevice(body.deviceId, body.secret);
+        if (a.error) return json({ error: a.error }, 403);
+        await db.from("hercules_push_oneshots").delete().eq("device_id", body.deviceId).eq("key", String(body.key ?? ""));
+        return json({ ok: true });
       }
       case "register": {
         const a = await authDevice(body.deviceId, body.secret);
@@ -150,7 +200,7 @@ Deno.serve(async (req) => {
       case "test": {
         const a = await authDevice(body.deviceId, body.secret);
         if (a.error || !a.row) return json({ error: a.error ?? "not registered" }, 403);
-        const res = await send(a.row.subscription, { title: "Kratos", body: "Notifications are live. No more excuses.", url: "#/kratos", tag: "test" });
+        const res = await send(a.row.subscription, { title: "Cratos", body: "Notifications are live. No more excuses.", url: "#/kratos", tag: "test" });
         return json({ ok: res === "ok", result: res });
       }
       default:

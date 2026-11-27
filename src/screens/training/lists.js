@@ -1,6 +1,8 @@
 /** Train drill-downs: History, Library (exercise database), Templates. */
 import { h } from '../../components/dom.js';
-import { NavHeader, List, ListRow, Card, EmptyState, Search, Button, SegmentedControl } from '../../components/primitives.js';
+import { NavHeader, List, ListRow, Card, EmptyState, Search, Button, SegmentedControl, Section, SectionAction } from '../../components/primitives.js';
+import { sessionExercises, FOCUS_NAMES, weekIndex } from '../../engines/coach/planner.js';
+import { exerciseName } from '../../data/exercises/exercises.js';
 import { openSheet, confirmSheet, toast } from '../../components/overlays.js';
 import * as repo from '../../services/storage/repository.js';
 import { EXERCISES } from '../../data/exercises/exercises.js';
@@ -47,20 +49,62 @@ export async function library(root) {
   render();
 }
 
+const READY = [
+  ['Full Body', 'Everything in one session'], ['Upper', 'Chest, back, shoulders, arms'], ['Lower', 'Quads, hamstrings, glutes, calves'],
+  ['Push', 'Chest, shoulders, triceps'], ['Pull', 'Back, rear delts, biceps'], ['Legs', 'Squat, hinge, lunge, accessories'],
+  ['Chest & Back', 'Big upper-body supersets'], ['Shoulders', 'Front, side and rear delts'], ['Arms', 'Biceps and triceps'],
+  ['Glutes', 'Hinges, thrusts and lunges'], ['Core', 'Abs and obliques'], ['Conditioning', 'Power and sweat'],
+];
+const LENGTHS = [20, 30, 45, 60, 75];
+/** Rough minutes: per set ~40 s of work + the prescribed rest. */
+const estMinutes = (ex) => Math.round(ex.reduce((a, e) => a + e.sets * ((e.durationSec ?? 40) + (e.restSec ?? 60)), 0) / 60) + 5;
+const rx = (e) => (e.reps ? `${e.sets} × ${e.reps}` : `${e.sets} × ${e.durationSec}s`);
+
 export function templates(root) {
-  return liveScreen(root, async () => {
-    const list = await repo.list('templates');
+  let minutes = 45;
+  const shown = {}; // focus → ids already offered, so Shuffle brings genuinely new picks
+  return liveScreen(root, async (refresh) => {
+    const [list, profile] = await Promise.all([repo.list('templates'), repo.getProfile()]);
+    const build = (focus) => sessionExercises(focus, { gear: profile.gear, experience: profile.experience ?? 'beginner', style: profile.style ?? 'general',
+      sessionMinutes: minutes, focusAreas: profile.focusAreas ?? [], week: weekIndex(), used: new Set(shown[focus] ?? []) });
+
+    const openReady = (focus) => {
+      const body = h('div', { class: 'stack' });
+      const draw = () => {
+        const ex = build(focus);
+        body.replaceChildren(
+          List(...ex.map((e) => ListRow({ title: exerciseName(e.exerciseId), value: rx(e), onClick: () => { sheet.close(); location.hash = `#/exercise?id=${e.exerciseId}`; } }))),
+          h('p', { class: 't-footnote c-2', style: { margin: 0 } }, `About ${estMinutes(ex)} min · picked from your equipment`),
+          Button({ label: 'Start Workout', variant: 'primary', block: true, iconName: 'play', onClick: () => { sheet.close(); begin({ name: focus, exercises: ex }); } }),
+          Button({ label: 'Shuffle Exercises', block: true, iconName: 'rotate', onClick: () => { shown[focus] = new Set([...(shown[focus] ?? []), ...ex.map((e) => e.exerciseId)]); draw(); } }));
+      };
+      const sheet = openSheet({ title: focus, content: body });
+      draw();
+    };
+
+    const openSaved = () => {
+      const sheet = openSheet({ title: 'Saved Workouts', content: h('div', { class: 'stack' }, list.length
+        ? List(...list.map((t) => ListRow({ title: t.name, subtitle: `${t.exercises.length} exercises`, onClick: () => { sheet.close(); openTemplate(t); } })))
+        : EmptyState({ inline: true, iconName: 'list', title: 'No saved workouts', body: 'Finish a workout and tap “Save as Template” to reuse it.' })) });
+    };
+    const openTemplate = (t) => {
+      const sheet = openSheet({ title: t.name, content: h('div', { class: 'stack' },
+        List(...t.exercises.map((e) => ListRow({ title: exerciseName(e.exerciseId), value: rx(e) }))),
+        Button({ label: 'Start Workout', variant: 'primary', block: true, iconName: 'play', onClick: () => { sheet.close(); begin({ name: t.name, exercises: t.exercises, templateId: t.id }); } }),
+        Button({ label: 'Delete Template', variant: 'danger', block: true, onClick: async () => {
+          sheet.close();
+          if (await confirmSheet({ title: 'Delete template?', message: `“${t.name}” will be removed. Workouts logged from it are kept.` })) { await repo.remove('templates', t.id); toast('Template deleted', { iconName: 'trash' }); }
+        } })) });
+    };
+
+    const ready = READY.filter(([f]) => FOCUS_NAMES.includes(f)).map(([f, sub]) => [f, sub, build(f).length]).filter(([, , n]) => n >= 3);
     return [
-      NavHeader({ title: 'Templates', back: { href: '#/train', label: 'Train' } }),
-      list.length ? List(...list.map((t) => ListRow({ title: t.name, subtitle: `${t.exercises.length} exercises`, onClick: () => {
-        const sheet = openSheet({ title: t.name, content: h('div', { class: 'stack' },
-          Button({ label: 'Start Workout', variant: 'primary', block: true, iconName: 'play', onClick: () => { sheet.close(); begin({ name: t.name, exercises: t.exercises, templateId: t.id }); } }),
-          Button({ label: 'Delete Template', variant: 'danger', block: true, onClick: async () => {
-            sheet.close();
-            if (await confirmSheet({ title: 'Delete template?', message: `“${t.name}” will be removed. Workouts logged from it are kept.` })) { await repo.remove('templates', t.id); toast('Template deleted', { iconName: 'trash' }); }
-          } })) });
-      } })))
-        : Card({}, EmptyState({ iconName: 'list', title: 'No templates', body: 'Finish a workout and tap “Save as Template” to reuse it.' })),
+      NavHeader({ title: 'Workouts', back: { href: '#/train', label: 'Train' } }),
+      SegmentedControl({ label: 'Length', value: String(minutes), onChange: (v) => { minutes = Number(v); refresh(); },
+        options: LENGTHS.map((m) => ({ value: String(m), label: `${m}m` })) }),
+      Section({ title: 'Ready-Made', action: SectionAction(`Saved (${list.length})`, openSaved) },
+        h('div', { class: 'nav-tiles workout-tiles' }, ready.map(([f, sub, n]) => h('button', { class: 'nav-tile', type: 'button', 'aria-label': `${f}: ${sub}`, onClick: () => openReady(f) },
+          h('span', { class: 'nav-tile__title' }, f), h('span', { class: 'nav-tile__sub' }, `${n} exercises`))))),
     ];
   });
 }

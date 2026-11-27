@@ -55,7 +55,7 @@ export function mount(root) {
       h('div', { class: 'nav-tiles' },
         navTile('clock', 'History', `${done.length} workouts`, '#/history'),
         navTile('search', 'Library', `${EXERCISES.length} exercises`, '#/library'),
-        navTile('list', 'Templates', `${templates.length} saved`, '#/templates')),
+        navTile('list', 'Workouts', '12 ready-made', '#/templates')),
       plan && Button({ label: 'This Week’s Plan', iconName: 'calendar', block: true, onClick: () => navigate('#/kratos') }),
     ];
   });

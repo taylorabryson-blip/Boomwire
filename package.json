@@ -1,6 +1,6 @@
 {
   "name": "hercules",
-  "version": "0.8.3",
+  "version": "0.9.0",
   "private": true,
   "type": "module",
   "description": "Hercules \u2014 personal fitness and physical performance operating system (PWA).",
