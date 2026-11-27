@@ -10,7 +10,7 @@ export function createTabBar() {
   const inner = h('div', { class: 'tabbar__inner lg' }, indicator);
   TABS.forEach((t, i) => {
     const glyph = t.icon === 'kratos' ? kratosMark(28) : icon(t.icon, 24);
-    const b = h('button', { class: 'tabbar__item', type: 'button', 'aria-label': t.label, dataset: { index: String(i) },
+    const b = h('button', { class: 'tabbar__item', type: 'button', 'aria-label': t.label, dataset: { index: String(i), tab: t.id },
       onClick: () => { if (b.getAttribute('aria-current') === 'page' && location.hash.split('?')[0] === `#/${t.id}`) window.scrollTo({ top: 0, behavior: 'smooth' }); else navigate(`#/${t.id}`); } },
     glyph, h('span', {}, t.label));
     items.set(t.id, b);

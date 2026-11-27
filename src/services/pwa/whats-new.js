@@ -11,10 +11,11 @@ import * as repo from '../storage/repository.js';
 import { APP_VERSION } from '../../app/version.js';
 
 export const CHANGELOG = [
-  { version: '0.8.2', items: [
-    'Liquid Glass is now clear glass with lensing: no frosting. Content behind the tab bar bends at the edges and splits into red, green and blue',
-    'Pressing a button turns it into a clear glass lens that magnifies with rainbow edges',
-    'Can be turned off in Settings → Appearance & Personalization → Liquid Glass lensing',
+  { version: '0.8.3', items: [
+    'Swipe between tabs like iOS: the next page slides in with your finger, already loaded',
+    'Tapping a tab is instant; page transitions are faster',
+    'New Apple-style notifications: quick confirmations pop up in the middle, anything with Undo sits just above the tab bar',
+    'Removed the glass lensing effect that slowed pages down',
   ] },
   { version: '0.8.1', items: [
     'Liquid Glass press: buttons swell into a glass lens, bend light at the rim, and a highlight follows your finger',

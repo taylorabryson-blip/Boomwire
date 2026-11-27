@@ -74,7 +74,7 @@
   --ease-sheet: cubic-bezier(0.32, 0.72, 0, 1);
   --dur-fast: 160ms;
   --dur-base: 280ms;
-  --dur-slow: 480ms;
+  --dur-slow: 360ms;
   --dur-spring: 620ms;
 
   /* ---- Layout --------------------------------------------------------- */

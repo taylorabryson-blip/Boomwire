@@ -53,58 +53,81 @@ export function installEdgeSwipe(view) {
 }
 
 /**
- * Swipe between the main tabs (Home ⇄ Train ⇄ Cratos ⇄ Nutrition ⇄ Progress).
- * Works on top-level screens only; ignores gestures that start on things that
- * scroll or drag sideways themselves (chip rows, sliders, the 3D body, sheets).
+ * Swipe between the main tabs, the iOS page-view way: the neighbouring page is already
+ * rendered (router pager) and slides in beside the current one, glued to your finger.
+ * Let go past ~30% (or flick) and it springs the rest of the way; otherwise it snaps back.
  */
-export function installTabSwipe(view) {
-  let x0 = 0, y0 = 0, t0 = 0, dx = 0, active = false, decided = false;
+export function installTabSwipe(view, pager) {
   const W = () => window.innerWidth;
-  const BLOCK = '.chips--scroll, .week-strip, canvas, input, textarea, select, .segmented, .stepper, .composer, .ql, .tiles--scroll, [data-no-swipe]';
-  const items = () => [...document.querySelectorAll('.tabbar__item')].filter((b) => !b.hidden);
-  const current = () => items().findIndex((b) => b.getAttribute('aria-current') === 'page');
+  const BLOCK = '.chips--scroll, .week-strip, canvas, input, textarea, select, .segmented, .stepper, .composer, .ql, .day-picker, [data-no-swipe]';
+  const EASE = 'cubic-bezier(.22,.9,.28,1)';
+  let s = null; // gesture state
+
+  const move = (el, x, ms = 0) => {
+    if (!el) return;
+    el.style.transition = ms ? `transform ${ms}ms ${EASE}` : 'none';
+    el.style.transform = x == null ? '' : `translate3d(${x}px,0,0)`;
+  };
 
   view.addEventListener('touchstart', (e) => {
     const t = e.touches[0];
-    if (e.touches.length > 1 || view.querySelector('.nav-back') || document.querySelector('.sheet') || document.body.classList.contains('focus-flow')) return;
+    if (s?.settling || e.touches.length > 1 || view.querySelector('.nav-back') || document.querySelector('.sheet') || document.body.classList.contains('focus-flow')) return;
     if (t.clientX < 24 || t.clientX > W() - 12 || e.target.closest(BLOCK)) return;
-    x0 = t.clientX; y0 = t.clientY; t0 = performance.now(); dx = 0; active = true; decided = false;
+    const { prev, next } = pager.neighbours();
+    s = { x0: t.clientX, y0: t.clientY, t0: performance.now(), dx: 0, decided: false, prevPath: prev, nextPath: next, prev: null, next: null, lastX: t.clientX, lastT: performance.now(), v: 0 };
+    // make sure both neighbours exist (usually already warm; the 3D page mounts here on demand)
+    if (prev) s.prev = pager.prepare(prev);
+    if (next) s.next = pager.prepare(next);
   }, { passive: true });
 
   view.addEventListener('touchmove', (e) => {
-    if (!active) return;
+    if (!s || s.settling) return;
     const t = e.touches[0];
-    const mx = t.clientX - x0, my = t.clientY - y0;
-    if (!decided) {
-      if (Math.abs(my) > 8 && Math.abs(my) > Math.abs(mx) * 0.8) { active = false; return; }
-      if (Math.abs(mx) < 12) return;
-      decided = true; view.classList.add('is-tab-swiping');
+    const mx = t.clientX - s.x0, my = t.clientY - s.y0;
+    if (!s.decided) {
+      if (Math.abs(my) > 8 && Math.abs(my) > Math.abs(mx)) { s = null; return; }
+      if (Math.abs(mx) < 10) return;
+      s.decided = true;
+      for (const p of [s.prev, s.next]) if (p) { p.host.classList.add('is-peeking'); }
     }
     e.preventDefault();
-    const i = current(), n = items().length;
-    const blocked = (mx < 0 && i >= n - 1) || (mx > 0 && i <= 0);
-    dx = blocked ? mx * 0.25 : mx; // rubber-band at the ends
-    view.style.transform = `translateX(${dx}px)`;
-    view.style.opacity = String(1 - Math.min(0.35, Math.abs(dx) / W() * 0.6));
+    const now = performance.now();
+    s.v = (t.clientX - s.lastX) / Math.max(1, now - s.lastT); s.lastX = t.clientX; s.lastT = now;
+    const target = mx < 0 ? s.next : s.prev;
+    s.dx = target ? mx : mx * 0.22; // rubber-band at the first/last tab
+    move(view, s.dx);
+    move(s.next?.host, W() + s.dx);
+    move(s.prev?.host, -W() + s.dx);
   }, { passive: false });
 
   const end = () => {
-    if (!active) return;
-    active = false;
-    if (!decided) return;
-    const i = current(), list = items();
-    const v = Math.abs(dx) / Math.max(1, performance.now() - t0);
-    const target = dx < 0 ? i + 1 : i - 1;
-    const go = (Math.abs(dx) > W() * 0.25 || v > 0.5) && target >= 0 && target < list.length;
-    view.classList.remove('is-tab-swiping');
-    view.classList.add('is-tab-settling');
-    view.style.transform = go ? `translateX(${dx < 0 ? -W() * 0.5 : W() * 0.5}px)` : '';
-    view.style.opacity = go ? '0' : '';
-    setTimeout(() => {
-      view.classList.remove('is-tab-settling');
-      view.style.transform = ''; view.style.opacity = '';
-      if (go) { haptic(); window.__herculesTabSwipe = dx < 0 ? 'next' : 'prev'; list[target].click(); }
-    }, go ? 200 : 260);
+    if (!s) return;
+    const g = s;
+    if (!g.decided) { s = null; return; }
+    g.settling = true;
+    const target = g.dx < 0 ? g.next : g.prev;
+    const go = !!target && (Math.abs(g.dx) > W() * 0.3 || (Math.abs(g.v) > 0.35 && Math.sign(g.v) === Math.sign(g.dx)));
+    const remaining = go ? W() - Math.abs(g.dx) : Math.abs(g.dx);
+    const ms = Math.round(Math.max(170, Math.min(300, remaining / Math.max(0.9, Math.abs(g.v)) )));
+    if (go) {
+      const dir = g.dx < 0 ? -1 : 1;
+      move(view, dir * W(), ms);
+      move(target.host, 0, ms);
+      setTimeout(async () => {
+        haptic();
+        await target.ready;
+        move(view, null); move(target.host, null);
+        for (const p of [g.prev, g.next]) p?.host.classList.remove('is-peeking');
+        pager.adopt(target);
+        s = null;
+      }, ms);
+    } else {
+      move(view, 0, ms); move(g.next?.host, W(), ms); move(g.prev?.host, -W(), ms);
+      setTimeout(() => {
+        for (const p of [g.prev, g.next]) { p?.host.classList.remove('is-peeking'); move(p?.host, null); }
+        move(view, null); s = null;
+      }, ms);
+    }
   };
   view.addEventListener('touchend', end);
   view.addEventListener('touchcancel', end);

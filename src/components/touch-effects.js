@@ -1,10 +1,9 @@
 /**
  * Platform touch feedback.
- *  iOS / desktop: pressed controls swell into clear Liquid Glass and get lensed
- *                 (magnified, RGB-split edges) by lensing.js. No frosting, no overlays.
+ *  iOS / desktop: pressed controls swell slightly with a lit glass rim (CSS transform
+ *                 only — no filters, so it costs nothing to draw).
  *  Android:       Material 3 ripple from the touch point.
  */
-import { pressGlass, releaseGlass } from './lensing.js';
 const android = () => document.documentElement.dataset.platform === 'android';
 
 function ripple(el, e) {
@@ -18,8 +17,8 @@ function ripple(el, e) {
 }
 
 /* ---------------- Liquid Glass press (iOS 26 behaviour) ----------------
- * Press a control: it swells, turns to clear glass, and the page lens (lensing.js)
- * magnifies it with RGB-split edges. Release: it springs back. Rows only highlight. */
+ * Press a control: it swells slightly and its glass rim lights up; release springs back.
+ * Transform + box-shadow only, so it never costs a repaint of the page. Rows only highlight. */
 const LENS = '.btn, .chip, .icon-btn, .tabbar__item, .segmented__item, .add-btn, .composer__send, .composer__mic, .gear-tile, .meal-tile__main, .nav-tile, .choice, .day-picker__d, .week-day, .ql__mic, .set-check, .stepper button, .meal-time, .banner__action';
 const ROW = 'button.list-row, a.list-row, .card--tap, .livebar, .scale5 button, .accordion__head';
 
@@ -29,7 +28,6 @@ function pressLens(el) {
   const grow = r.width < 70 ? 1.16 : r.width < 180 ? 1.08 : 1.04; // small controls swell more, like iOS
   el.style.setProperty('--lg-grow', String(grow));
   el.classList.remove('lg-release');
-  pressGlass(el, grow); // measure before the swell starts
   el.classList.add('lg-press');
   return el;
 }
@@ -37,7 +35,6 @@ function releaseLens(el) {
   if (!el) return;
   el.classList.remove('lg-press');
   el.classList.add('lg-release');
-  releaseGlass();
   setTimeout(() => el.classList.remove('lg-release'), 560);
 }
 

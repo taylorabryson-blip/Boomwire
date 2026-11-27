@@ -1,8 +1,8 @@
 /**
- * System-style surfaces (replaces the old Dynamic Island imitation).
+ * System-style surfaces.
  *
- *  island.flash({...})  → iOS notification banner: slides down from the top,
- *                         swipe up to dismiss, tap to act. Queued, one at a time.
+ *  island.flash({...})  → HUD for quick confirmations, capsule above the tab bar when
+ *                         there's an action (Undo/View/Open). Queued, one at a time.
  *  island.live({...})   → "Now playing"-style mini bar above the tab bar for
  *                         ongoing activities (workout timer, rest timer). Tap opens.
  *  island.clear(id)     → end the live activity.
@@ -12,57 +12,58 @@
 import { h } from './dom.js';
 import { icon } from './icons.js';
 import { haptic } from './haptics.js';
-import { herculesMark } from './brand.js';
 
-/* ---------- Banner ---------- */
-let bannerEl = null, showing = false, hideTimer = null;
+/* ---------- Feedback: Apple's in-app patterns ----------
+ *  • Quick confirmation (no action)  → HUD: small rounded square in the middle, symbol + a
+ *    couple of words, springs in and fades (like "Copied" / silent-mode HUDs).
+ *  • Has an action (Undo, View, Open) → capsule just above the tab bar with the action on the
+ *    right (like Mail's Undo Send). Swipe down to dismiss.
+ *  • Android keeps the Material snackbar.
+ */
+let current = null, hideTimer = null;
 const queue = [];
+const android = () => document.documentElement.dataset.platform === 'android';
 
-function bannerNode(a) {
-  const node = h('div', { class: 'banner lg', role: 'status', 'aria-live': 'polite' },
-    h('div', { class: 'banner__app' }, a.icon ? icon(a.icon, 20) : herculesMark(22)),
-    h('div', { class: 'banner__body' },
-      h('div', { class: 'banner__top' }, h('span', { class: 'banner__title' }, a.title), h('span', { class: 'banner__time' }, 'now')),
-      a.subtitle && h('div', { class: 'banner__sub' }, a.subtitle)),
-    a.actionLabel && h('button', { class: 'banner__action', type: 'button', onClick: (e) => { e.stopPropagation(); a.onAction?.(); haptic(); dismiss(); } }, a.actionLabel));
-  node.style.setProperty('--banner-accent', a.accent ?? '#fff');
+function hudNode(a) {
+  return h('div', { class: 'hud', role: 'status', 'aria-live': 'polite' },
+    h('div', { class: 'hud__icon' }, icon(a.icon ?? 'check', 34)),
+    h('div', { class: 'hud__title' }, a.title),
+    a.subtitle && h('div', { class: 'hud__sub' }, a.subtitle));
+}
 
-  // Swipe up to dismiss, tap to act — same as iOS banners.
+function capsuleNode(a) {
+  const node = h('div', { class: android() ? 'banner' : 'capsule', role: 'status', 'aria-live': 'polite' },
+    android() ? null : h('span', { class: 'capsule__icon' }, icon(a.icon ?? 'check', 18)),
+    h('div', { class: 'capsule__text' }, h('span', { class: 'capsule__title' }, a.title), a.subtitle && h('span', { class: 'capsule__sub' }, a.subtitle)),
+    a.actionLabel && h('button', { class: 'capsule__action', type: 'button', onClick: (e) => { e.stopPropagation(); a.onAction?.(); haptic(); dismiss(); } }, a.actionLabel));
   let y0 = null, dy = 0;
-  node.addEventListener('pointerdown', (e) => { y0 = e.clientY; dy = 0; node.style.transition = 'none'; node.setPointerCapture?.(e.pointerId); });
-  node.addEventListener('pointermove', (e) => {
-    if (y0 == null) return;
-    dy = e.clientY - y0;
-    node.style.transform = `translateY(${dy < 0 ? dy : Math.sqrt(dy) * 3}px)`;
-  });
-  const end = () => {
-    if (y0 == null) return;
-    y0 = null; node.style.transition = ''; node.style.transform = '';
-    if (dy < -24) dismiss();
-    else if (Math.abs(dy) < 6 && a.onAction && !a.actionLabel) { a.onAction(); dismiss(); }
-  };
-  node.addEventListener('pointerup', end);
-  node.addEventListener('pointercancel', end);
+  node.addEventListener('pointerdown', (e) => { if (e.target.closest('button')) return; y0 = e.clientY; dy = 0; node.style.transition = 'none'; });
+  node.addEventListener('pointermove', (e) => { if (y0 == null) return; dy = Math.max(-6, e.clientY - y0); node.style.transform = `translate(-50%, ${dy}px)`; });
+  const end = () => { if (y0 == null) return; y0 = null; node.style.transition = ''; node.style.transform = ''; if (dy > 20) dismiss(); };
+  node.addEventListener('pointerup', end); node.addEventListener('pointercancel', end);
   return node;
 }
 
 function next() {
-  if (showing || !queue.length) return;
+  if (current || !queue.length) return;
   const a = queue.shift();
-  showing = true;
-  bannerEl = bannerNode(a);
-  document.body.append(bannerEl);
-  requestAnimationFrame(() => requestAnimationFrame(() => bannerEl?.classList.add('is-in')));
-  hideTimer = setTimeout(dismiss, a.duration ?? 3600);
+  const isCapsule = !!a.actionLabel || android();
+  const el = isCapsule ? capsuleNode(a) : hudNode(a);
+  current = el;
+  document.body.append(el);
+  requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('is-in')));
+  const ms = a.duration ?? (isCapsule ? 4000 : (a.subtitle ? 1900 : 1300));
+  hideTimer = setTimeout(dismiss, isCapsule ? ms : Math.min(ms, 2400));
 }
 
 function dismiss() {
   clearTimeout(hideTimer);
-  const el = bannerEl; bannerEl = null;
+  const el = current;
   if (!el) return;
-  el.classList.remove('is-in');
-  el.addEventListener('transitionend', () => { el.remove(); showing = false; next(); }, { once: true });
-  setTimeout(() => { if (el.isConnected) { el.remove(); showing = false; next(); } }, 600);
+  el.classList.remove('is-in'); el.classList.add('is-out');
+  const done = () => { if (current === el) current = null; el.remove(); next(); };
+  el.addEventListener('transitionend', done, { once: true });
+  setTimeout(() => { if (el.isConnected) done(); }, 450);
 }
 
 /* ---------- Live mini bar ---------- */

@@ -12,7 +12,6 @@ import { parseHash, goBack } from './nav.js';
 
 export function startRouter(view, tabbar, topbar) {
   installEdgeSwipe(view);
-  installTabSwipe(view);
   let cleanup = null, token = 0, lastDepth = null, io = null;
 
   async function swap(route, params, my) {
@@ -36,7 +35,76 @@ export function startRouter(view, tabbar, topbar) {
     io.observe(title);
   }
 
+  /* ---------- Pager: neighbouring tabs live, pre-rendered off-screen ----------
+   * Lets a swipe show the next page under your finger (like UIPageViewController) and
+   * makes tab taps instant. A peer is a fully mounted screen in a hidden fixed host;
+   * adopting it just moves its root into #view — no re-render, state kept. */
+  const peers = new Map(); // '#/name' → { host, root, route, cleanup, ready, path }
+  let current = null;      // { path, route } of the mounted top-level screen
+  let adoptedHash = null;
+  const tabPaths = () => [...document.querySelectorAll('.tabbar__item')].filter((b) => !b.hidden).map((b) => b.getAttribute('href') ?? `#/${b.dataset.tab}`);
+
+  function prepare(path) {
+    if (peers.has(path)) return peers.get(path);
+    const route = ROUTES[path.replace(/^#\//, '')];
+    if (!route || route.depth !== 0) return null;
+    const host = h('div', { class: 'view view--peer', 'aria-hidden': 'true' });
+    const root = h('div', { class: 'screen' });
+    host.append(root);
+    document.body.append(host);
+    const peer = { host, root, route, path, cleanup: null };
+    peer.ready = route.load().then((mod) => mod[route.fn ?? 'mount'](root, { params: new URLSearchParams() })).then((c) => { peer.cleanup = c ?? null; }).catch(() => {});
+    peers.set(path, peer);
+    return peer;
+  }
+  function park(path, root, route, cl) { // turn the outgoing screen into a peer so swiping back is instant
+    const host = h('div', { class: 'view view--peer', 'aria-hidden': 'true' });
+    host.append(root); document.body.append(host);
+    peers.set(path, { host, root, route, path, cleanup: cl, ready: Promise.resolve() });
+  }
+  function drop(path) { const p = peers.get(path); if (!p) return; p.cleanup?.(); p.host.remove(); peers.delete(path); }
+  function neighbours(path) { const list = tabPaths(); const i = list.indexOf(path); return { prev: i > 0 ? list[i - 1] : null, next: i >= 0 && i < list.length - 1 ? list[i + 1] : null }; }
+  let warmT = 0;
+  function warmNeighbours() {
+    clearTimeout(warmT);
+    warmT = setTimeout(() => {
+      if (!current || current.route.depth !== 0) { [...peers.keys()].forEach(drop); return; }
+      const { prev, next } = neighbours(current.path);
+      for (const k of [...peers.keys()]) if (k !== prev && k !== next) drop(k);
+      for (const k of [prev, next]) if (k && k !== '#/progress') prepare(k); // 3D body is mounted on demand only
+    }, 350);
+  }
+  /** Make a prepared peer the live screen. */
+  function adopt(peer) {
+    token++;
+    const old = view.firstElementChild;
+    if (current?.route.depth === 0 && old && current.path !== peer.path) park(current.path, old, current.route, cleanup);
+    else cleanup?.();
+    peers.delete(peer.path);
+    view.replaceChildren(peer.root);
+    peer.host.remove();
+    cleanup = peer.cleanup;
+    lastDepth = 0;
+    tabbar.setActive(peer.route.tab);
+    current = { path: peer.path, route: peer.route };
+    window.scrollTo(0, 0);
+    wireTopbar(peer.root);
+    if (location.hash !== peer.path) { adoptedHash = peer.path; location.hash = peer.path; }
+    warmNeighbours();
+  }
+  const pager = { prepare, adopt, neighbours: () => (current ? neighbours(current.path) : {}), get current() { return current; } };
+  installTabSwipe(view, pager);
+
   async function render() {
+    if (adoptedHash && location.hash === adoptedHash) { adoptedHash = null; return; }
+    // Tab tap onto a pre-rendered page: instant
+    const peer = peers.get(location.hash);
+    if (peer && lastDepth === 0) {
+      await peer.ready;
+      adopt(peer);
+      view.firstElementChild?.classList.add('screen-in');
+      return;
+    }
     let { name, params } = parseHash();
     name = ALIASES[name] ?? name;
     const route = ROUTES[name] ?? ROUTES.home;
@@ -62,6 +130,7 @@ export function startRouter(view, tabbar, topbar) {
       await swap(route, params, my);
       view.firstElementChild?.classList.add(dir === 'tab' ? (swipeDir === 'next' ? 'screen-in-right' : 'screen-in-left') : 'screen-in');
     }
+    if (my === token) { current = { path: `#/${name}`, route }; warmNeighbours(); }
   }
 
   window.addEventListener('hashchange', () => { sessionStorage.setItem('hercules:navigated', '1'); render(); });
