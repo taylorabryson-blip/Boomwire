@@ -43,3 +43,21 @@ export function daysMeetingGoal(totals, goalMl) {
   if (!goalMl) return null;
   return totals.filter((t) => t.logged && t.totalMl >= goalMl).length;
 }
+
+/**
+ * H5 — Probable double log: the same amount (±5%) logged in the last 3 minutes,
+ * or any amount in the last 45 seconds. Returns the earlier entry or null.
+ * Uses createdAt (when the tap happened), not the drink time the user picked.
+ */
+export function possibleDuplicate(entries, amountMl, now = new Date()) {
+  const t = now.getTime();
+  const recent = entries.filter((e) => !e.deletedAt && e.createdAt).map((e) => ({ e, age: t - Date.parse(e.createdAt) }))
+    .filter((x) => x.age >= 0).sort((a, b) => a.age - b.age);
+  const hit = recent.find(({ e, age }) => (age <= 180000 && Math.abs(e.amountMl - amountMl) <= amountMl * 0.05) || age <= 45000);
+  return hit?.e ?? null;
+}
+
+/** Most recent drink time today ("HH:MM") or null. */
+export function lastDrinkTime(entries) {
+  return entries.filter((e) => !e.deletedAt && e.time).map((e) => e.time).sort().at(-1) ?? null;
+}

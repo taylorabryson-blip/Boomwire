@@ -388,7 +388,7 @@ input[type=number] { -moz-appearance: textfield; }
 .glass-pill { display: inline-block; padding: 7px 14px; border-radius: var(--r-pill); color: var(--c-text-2); background: rgba(20,20,22,.62); -webkit-backdrop-filter: blur(18px) saturate(1.6); backdrop-filter: blur(18px) saturate(1.6); border: .5px solid rgba(255,255,255,.12); }
 .meal-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); }
 .meal-tile { position: relative; background: var(--c-surface-1); border: var(--hairline) solid var(--c-separator); border-radius: var(--r-md); }
-.meal-tile__main { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; width: 100%; padding: 12px 14px; text-align: left; }
+.meal-tile__main { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%; padding: 10px 14px; text-align: left; }
 .meal-tile__head { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-footnote); font-weight: var(--fw-semibold); color: var(--c-text-2); }
 .meal-tile__kcal { font-family: var(--font-rounded); font-size: 22px; font-weight: 600; color: var(--c-text-1); }
 .meal-tile__kcal small { font-size: 12px; color: var(--c-text-2); font-weight: 500; }
@@ -587,3 +587,32 @@ body.has-live .capsule { bottom: calc(var(--tabbar-gap) + var(--tabbar-h) + 76px
 .workout-tiles { grid-auto-rows: 1fr; }
 .workout-tiles .nav-tile { gap: 6px; padding: 12px; min-height: 64px; align-content: center; }
 .workout-tiles .nav-tile__title { line-height: 1.15; }
+
+/* Nutrition → For You: one slim line under the macros it helps close. */
+.idea-line { display: flex; align-items: center; gap: 8px; width: 100%; margin-top: 10px; padding-top: 10px; border-top: var(--hairline) solid var(--c-separator); text-align: left; color: var(--c-text-2); font-size: var(--fs-footnote); }
+.idea-line > svg:first-child { color: #ffd60a; flex: none; }
+.idea-line > svg:last-child { color: var(--c-text-3); flex: none; }
+.idea-line__text { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.idea-line__text b { color: var(--c-text-1); font-weight: var(--fw-semibold); }
+.ideas-head { display: grid; gap: 4px; margin: var(--sp-4) 4px var(--sp-3); }
+.ideas-foot { margin: var(--sp-3) 4px 0; }
+.ideas-head + .list .list-row__subtitle { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Water: tappable summary opens the timeline; "When" row in the add sheet. */
+.water-sum { text-align: left; color: inherit; min-width: 0; gap: 12px; }
+.field--row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.field--row .field__label { color: var(--c-text-2); font-size: var(--fs-subhead); }
+.field--row input[type=time] { background: var(--c-surface-3); border: 0; border-radius: 8px; padding: 6px 10px; color: var(--c-text-1); font: inherit; font-variant-numeric: tabular-nums; width: auto; }
+
+/* While a sheet is up, notifications drop in at the top like iOS banners so
+   they never cover the sheet's buttons. */
+body.sheet-open .capsule { bottom: auto; top: calc(env(safe-area-inset-top, 0px) + 10px); z-index: 120; }
+body.sheet-open .capsule { transform: translate(-50%, -24px) scale(.96); }
+body.sheet-open .capsule.is-in { transform: translate(-50%, 0) scale(1); }
+body.sheet-open .capsule.is-out { transform: translate(-50%, -30px) scale(.97); }
+
+/* Check-in sleep times */
+.time-pill { background: var(--c-surface-3); border: 0; border-radius: 8px; padding: 6px 10px; color: var(--c-text-1); font: inherit; font-variant-numeric: tabular-nums; }
+.sleep-note { font-size: var(--fs-footnote); color: var(--c-text-2); margin: 2px 4px 4px; line-height: 1.4; }
+.sleep-note b { color: var(--c-text-1); }
+.sleep-note .link { color: #0a84ff; font: inherit; padding: 0; display: inline; }

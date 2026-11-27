@@ -12,6 +12,7 @@ an entry. Implementations live in `src/engines/calculations/`.
 | H2 | Daily average | Mean of H1 over **logged days only** (≥ 1 entry) in the window | Recorded (derived) | `null` → shown as "—"; unlogged days are excluded, not counted as zero | `hydration H2` |
 | H3 | Goal progress | H1 ÷ user goal. Not clamped; the ring caps visually at 100 % | Recorded vs. user target | `null` when no goal is set | `hydration H3/H4` |
 | H4 | Days meeting goal | Count of logged days where H1 ≥ goal | Recorded (derived) | `null` without a goal | `hydration H3/H4` |
+| H5 | Probable double log | Same amount (±5 %) tapped within 3 min, or any amount within 45 s, asks “Already logged this?” before adding. Drinks logged at an earlier time skip the check. Every entry keeps its time | Recorded | No prompt when nothing recent | `v10 H5` |
 
 The goal is a **user-chosen target**. Hercules does not calculate a
 "required" water intake, because needs vary with body size, climate and activity.
@@ -88,10 +89,16 @@ Food values come from USDA FoodData Central SR Legacy (per 100 g, public domain,
 
 | N9 | Water target = max(1.5 L, 35 mL × kg) + 500 mL on planned training days, rounded to 50 mL (imperial: nearest 4 oz). A user-set goal overrides it. Estimate |
 | N10 | Spoken/typed meals are split on commas, “and”, “with”, “plus”; each item → quantity (digits, fractions, words like “two”, “half”), unit (cup, tbsp, oz, g, slice, scoop…), size (small–jumbo) and food words |
+| N12 | Food suggestions: groups ranked by need. Before training (≤ 2 h) quick low-fat carbs ≈ 0.5 g/kg (20–60 g); after training protein + carbs; foods you log 2+ times that fit the biggest gap; protein to close the gap at ≈ 0.4 g/kg per sitting (20–50 g); easy calories on a bulk (≥ 400 kcal left); fiber when ≥ 8 g short; quick-energy sugar foods when there’s room; light options only once targets are met. Nutrition facts are USDA SR Legacy (PB&J summed from USDA bread, peanut butter and jelly). Conventions, not guarantees |
 | N11 | Portions: mass units convert exactly; household units use that food’s USDA measure; size words pick that measure; otherwise one typical unit (medium → large → piece → serving). Eggs default to large. Unmatched portions are marked *est.* |
 | N12 | Suggestions: foods you already log (plus a few lean staples), ranked by protein per kcal when > 10 g protein remains, sized to your usual portion but never above 90 % of the calories left |
 
 Manual targets (Nutrition → Targets → Manual) override N5 entirely. Food items said without a number use your last portion of that food (“your usual”).
+
+## Sleep (`engines/recovery/sleep.js`)
+| ID | Rule |
+|---|---|
+| S1 | Best evidence first. **Apple Health** (iPhone Sleep Schedule time in bed, or Apple Watch sleep) via the “Hercules Sleep” shortcut: first non-awake sample start → last sample end. Otherwise an **estimate**: asleep = later of scheduled bedtime and your last use of Hercules last night, plus 15 min sleep-onset latency (typical 10–20 min); woke = scheduled wake time, or your first open this morning if earlier. Times you set yourself always win and are never overwritten by an import. App-use moments stay on the phone (3 days) |
 
 ## Comparisons & recovery (`engines/analytics/compare.js`)
 | ID | Rule |

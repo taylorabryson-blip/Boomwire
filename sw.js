@@ -3,7 +3,7 @@
  * User data lives in IndexedDB and is never touched here.
  * Bump VERSION on every release so clients pick up new code.
  */
-const VERSION = 'v0.9.0';
+const VERSION = 'v0.10.0';
 const CACHE = `hercules-shell-${VERSION}`;
 const CORE = ['./', './index.html', './manifest.webmanifest', './assets/icons/icon-192.png', './assets/icons/icon-512.png'];
 

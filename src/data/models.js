@@ -45,6 +45,8 @@ export const SCHEMAS = {
       voice: { type: 'object', nullable: true },
       appearance: { type: 'object', nullable: true },
       widgetKey: { type: 'text', nullable: true },
+      sleepFromHealth: { type: 'boolean', nullable: true },
+      sleepLastImport: { type: 'text', nullable: true },
     },
   },
   hydrationLogs: {
@@ -154,6 +156,9 @@ export const SCHEMAS = {
       date: { type: 'date', required: true },
       sleepHours: num(0, 24),
       sleepQuality: { type: 'int', nullable: true, min: 1, max: 5 },
+      sleepStart: { type: 'text', nullable: true, max: 40 },
+      sleepEnd: { type: 'text', nullable: true, max: 40 },
+      sleepSource: { type: 'enum', values: ['health', 'estimate', 'manual'], nullable: true },
       soreness: { type: 'int', nullable: true, min: 1, max: 5 },
       energy: { type: 'int', nullable: true, min: 1, max: 5 },
       stress: { type: 'int', nullable: true, min: 1, max: 5 },

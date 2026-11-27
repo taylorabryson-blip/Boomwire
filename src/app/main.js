@@ -35,6 +35,7 @@ async function boot() {
   registerServiceWorker();
   startWorkoutActivity();
   startReminderClock();
+  import('../services/sleep.js').then((m) => m.startActivityTracking()).catch(() => {});
   // Once there's a plan, offer push so workout reminders reach a locked phone.
   setTimeout(async () => {
     const plan = await import('../services/coach.js').then((m) => m.getPlan()).catch(() => null);

@@ -30,6 +30,7 @@ export const ROUTES = {
   'custom-food': r('nutrition', 3, () => import('../screens/nutrition/custom-food.js')),
   'nutrition-targets': r('nutrition', 1, () => import('../screens/nutrition/targets.js')),
   'nutrition-week': r('nutrition', 1, () => import('../screens/nutrition/week.js')),
+  'food-ideas': r('nutrition', 1, () => import('../screens/nutrition/ideas.js')),
   progress: r('progress', 0, () => import('../screens/progress/progress.js')),
   muscle: r('progress', 1, () => import('../screens/progress/muscle.js')),
   measurements: r('progress', 1, () => import('../screens/progress/measurements.js')),

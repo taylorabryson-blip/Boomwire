@@ -11,6 +11,13 @@ import * as repo from '../storage/repository.js';
 import { APP_VERSION } from '../../app/version.js';
 
 export const CHANGELOG = [
+  { version: '0.10.0', items: [
+    'For You: food ideas sized to your body weight and what’s left today: your go-to foods, protein, easy calories (PB&J!), quick sugar before a workout. Tap any food for its full nutrition facts',
+    'Water keeps the time of every drink. See today’s timeline, delete mistakes, or log one you forgot at the time you drank it',
+    'Tapped twice by accident? Hercules asks before logging the same water again',
+    'Sleep: “Fell asleep” and “Woke up” are filled in for you, from Apple Health if you set up the Hercules Sleep shortcut, otherwise estimated from your schedule and when you last used the app',
+    'Notifications drop to the top of the screen while a sheet is open, so they never cover buttons',
+  ] },
   { version: '0.9.0', items: [
     'Rest timers and reminders now reach you with the app closed or your phone locked (turn on with one tap when asked)',
     '376 exercises, up from 110: kettlebell, landmine, rings and TRX, sliders, plyometrics, Olympic lifts, strongman, boxing and mobility',

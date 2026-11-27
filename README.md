@@ -6,7 +6,7 @@ A personal fitness and physical-performance operating system, built as an
 iPhone-first Progressive Web App with an architecture ready for a future
 native SwiftUI layer.
 
-**Status: v0.9.0 — server push (reminders + rest timers with the phone locked), 376-exercise library, data-driven Cratos planner.**
+**Status: v0.10.0 — personalized food suggestions (N12), timed water log with double-log guard (H5), sleep from Apple Health or a smart estimate (S1).**
 
 ## Run it
 

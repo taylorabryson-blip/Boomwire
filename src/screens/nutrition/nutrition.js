@@ -14,8 +14,12 @@ import { dailyTotal, goalProgress } from '../../engines/calculations/hydration.j
 import { byMeal, totals, macroPercents } from '../../engines/nutrition/nutrition.js';
 import { openQuickLog } from './quick-log-sheet.js';
 import { activeTargets, waterGoal } from '../../services/nutrition/log.js';
-import { addWater, openAddWaterSheet } from '../shared/hydration-ui.js';
+import { addWater, openAddWaterSheet, openWaterLog } from '../shared/hydration-ui.js';
+import { lastDrinkTime } from '../../engines/calculations/hydration.js';
+import { fmt12, toMin } from '../../engines/coach/parser.js';
 import { liveScreen } from '../shared/live.js';
+import { suggestionsForToday } from '../../services/nutrition/suggest.js';
+import { headline } from '../../engines/nutrition/suggest.js';
 
 export const MEAL_LABELS = { breakfast: 'Breakfast', lunch: 'Lunch', dinner: 'Dinner', snacks: 'Snacks' };
 const MEAL_ICONS = { breakfast: 'sunrise', lunch: 'sun', dinner: 'moon', snacks: 'apple' };
@@ -27,7 +31,8 @@ export function mount(root, { params }) {
     const today = localDateKey();
     const date = viewDate ?? today;
     const [settings0, food, water, targets] = await Promise.all([repo.getSettings(), repo.listByDate('foodLogs', date), repo.listByDate('hydrationLogs', date), activeTargets()]);
-    const wg = await waterGoal(settings0);
+    const [wg, ideas] = await Promise.all([waterGoal(settings0), date === today ? suggestionsForToday(date).catch(() => []) : []]);
+    const idea = headline(ideas);
     const settings = { ...settings0, hydrationGoalMl: wg.ml };
     const t = totals(food);
     const meals = byMeal(food);
@@ -56,23 +61,29 @@ export function mount(root, { params }) {
       }),
       Card({},
         h('div', { class: 'row', style: { gap: '18px', alignItems: 'center' } },
-          ProgressRing({ progress: hasTargets ? t.kcal / targets.kcal : null, size: 100, stroke: 11, color: t.kcal > (targets?.kcal ?? Infinity) * 1.1 ? '#ff9f0a' : '#fff',
+          ProgressRing({ progress: hasTargets ? t.kcal / targets.kcal : null, size: 88, stroke: 10, color: t.kcal > (targets?.kcal ?? Infinity) * 1.1 ? '#ff9f0a' : '#fff',
             center: h('div', {},
-              h('div', { class: 'rounded num', style: { fontSize: '24px', fontWeight: 700 } }, hasTargets ? String(Math.round(Math.abs(targets.kcal - t.kcal))) : String(Math.round(t.kcal))),
+              h('div', { class: 'rounded num', style: { fontSize: '22px', fontWeight: 700 } }, hasTargets ? String(Math.round(Math.abs(targets.kcal - t.kcal))) : String(Math.round(t.kcal))),
               h('div', { class: 't-caption c-2' }, hasTargets ? (t.kcal > targets.kcal ? 'kcal over' : 'kcal left') : 'kcal')) }),
           h('div', { class: 'grow' },
             h('button', { type: 'button', style: { display: 'block', width: '100%', textAlign: 'left' }, 'aria-label': 'Toggle grams or percent',
               onClick: () => repo.updateSettings({ macroDisplay: pct ? 'grams' : 'percent' }) },
               macroRow('protein', 'Protein', '#64d2ff'), macroRow('carbs', 'Carbs', '#ffd60a'), macroRow('fat', 'Fat', '#ff9f0a')),
             hasTargets
-              ? h('div', { class: 't-caption c-2', style: { marginTop: '10px' } }, `${Math.round(t.kcal)} of ${targets.kcal} kcal · Fiber ${Math.round(t.fiber)}/${targets.fiber} g`)
-              : h('div', { style: { marginTop: '10px' } }, Button({ label: 'Set Targets', size: 'small', block: true, onClick: () => navigate('#/nutrition-targets') }))))),
+              ? (idea ? null : h('div', { class: 't-caption c-2', style: { marginTop: '10px' } }, `${Math.round(t.kcal)} of ${targets.kcal} kcal · Fiber ${Math.round(t.fiber)}/${targets.fiber} g`))
+              : h('div', { style: { marginTop: '10px' } }, Button({ label: 'Set Targets', size: 'small', block: true, onClick: () => navigate('#/nutrition-targets') })))),
+        idea && h('button', { class: 'idea-line', type: 'button', 'aria-label': `${idea.title}: ${idea.text}`, onClick: () => navigate('#/food-ideas') },
+          icon('bolt', 14), h('span', { class: 'idea-line__text' }, h('b', {}, idea.title), ` · ${idea.text}`), icon('chevronRight', 12))),
       Card({},
         h('div', { class: 'row' },
-          h('span', { style: { color: 'var(--c-water)' } }, icon('drop', 22)),
-          h('div', { class: 'grow' },
-            h('div', { class: 't-headline num' }, volumeString(waterMl, settings.units)),
-            h('div', { class: 't-caption c-2' }, `${settings.units === 'metric' ? '' : cupsString(waterMl) + ' · '}${settings.hydrationGoalMl ? `${Math.round((goalProgress(waterMl, settings.hydrationGoalMl) ?? 0) * 100)}% of goal` : 'add weight for a goal'}`)),
+          h('button', { type: 'button', class: 'row grow water-sum', 'aria-label': 'Today’s water log', onClick: () => openWaterLog(settings) },
+            h('span', { style: { color: 'var(--c-water)' } }, icon('drop', 22)),
+            h('div', { class: 'grow' },
+              h('div', { class: 't-headline num' }, volumeString(waterMl, settings.units)),
+              h('div', { class: 't-caption c-2' }, [
+                settings.hydrationGoalMl ? `${Math.round((goalProgress(waterMl, settings.hydrationGoalMl) ?? 0) * 100)}% of goal` : 'add weight for a goal',
+                lastDrinkTime(water) && `last ${fmt12(toMin(lastDrinkTime(water)))}`,
+              ].filter(Boolean).join(' · ')))),
           Button({ label: settings.units === 'metric' ? '+250 ml' : '+1 cup', size: 'small', onClick: () => addWater(settings.units === 'metric' ? 250 : Math.round(flOzToMl(8)), settings) }),
           h('button', { class: 'add-btn', type: 'button', 'aria-label': 'Custom amount', onClick: () => openAddWaterSheet(settings) }, icon('plus', 16)))),
       h('div', { class: 'meal-tiles' }, Object.entries(MEAL_LABELS).map(([m, label]) => {
